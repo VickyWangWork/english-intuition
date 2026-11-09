@@ -108,6 +108,10 @@ label.f .hint{font-weight:400;font-size:12.5px}
 .list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer;text-decoration:none;color:inherit}
 .item:first-child{border-top:0}
+.irow{display:flex;align-items:center;border-top:1px solid var(--line)}
+.irow:first-child{border-top:0}
+.irow .item{flex:1;min-width:0;border-top:0}
+.isp{flex:none;padding-right:12px}
 .item .body{flex:1;min-width:0}
 .item .hw{font-family:var(--f-head);font-size:19px;font-weight:700;line-height:1.25}
 .item .pos{font-family:var(--f-head);font-style:italic;font-weight:400;color:var(--muted);font-size:15px;margin-left:6px}
@@ -783,13 +787,13 @@ function renderWords(v){
     <div class="filters">${f("all","All")}${f("due","Due")}${f("shaky","Shaky")}${nCap?f("captured",`Not built (${nCap})`):""}
       ${tags.map(t=>`<button class="fbtn" data-act="tag" data-t="${esc(t)}" aria-pressed="${S.tag===t}">#${esc(t)}</button>`).join("")}</div>
     ${list.length?`<div class="list">${list.map(e=>`
-      <a class="item" href="#w-${esc(e.id)}">
+      <div class="irow"><a class="item" href="#w-${esc(e.id)}">
         <div class="body">
           <div><span class="hw">${esc(e.word)}</span>${e.pos?`<span class="pos">${esc(e.pos)}</span>`:""}</div>
           ${e.ipa?`<div class="ipa">${ipaHTML(e.ipa)}</div>`:""}
           <div class="gist">${esc(e.captured?(S.busy.draft&&S.busy.draft[e.id]?"The AI is writing this entry…":"Entry not built yet. Tap to finish it."):(e.meaning||""))}</div>
         </div>${statusChip(e)}
-      </a>`).join("")}${addRow}</div>`
+      </a>${e.captured?"":`<div class="isp">${speakBtn(e.word)}</div>`}</div>`).join("")}${addRow}</div>`
       : `<div class="list">${addRow||`<div class="empty">${all.length?"No words match. Try another search or filter.":"Your dictionary is empty. Type your first word above."}</div>`}</div>`}
     <p class="note">Saved on this phone. Use More → Export to back up or move your words.</p>
   </div>`;
@@ -1402,7 +1406,7 @@ function renderBackup(v){
   v.innerHTML=`<div class="stack">${notes()}
     <div class="banner">Your words are saved on this phone. Export a backup now and then to keep them safe or move them to another device.</div>
     <form class="stack" id="cfgForm" style="gap:10px" autocomplete="on"><h2 class="sec" style="margin:0">AI settings</h2>
-      <p class="small">New words are written by an AI service using your own key. The key stays on this device and is never uploaded to GitHub. When you save, Safari can offer to keep it in iCloud Keychain, so your other Apple devices fill it in with one tap.</p>
+      <p class="small">New words are written by an AI service using your own key. The key stays on this device and is never uploaded to GitHub. When you save, Safari or Chrome can offer to keep it in your password manager (iCloud Keychain or Google Password Manager), so your other devices fill it in with one tap.</p>
       <input type="text" name="username" autocomplete="username" value="${S.cfg.provider==="claude"?"Claude API key":"Gemini API key"}" hidden readonly>
       <label class="f">Service<select id="cfgProvider"><option value="gemini" ${S.cfg.provider==="gemini"?"selected":""}>Google Gemini (free tier)</option><option value="claude" ${S.cfg.provider==="claude"?"selected":""}>Claude (Anthropic API, paid)</option></select></label>
       <label class="f">API key<span class="hint">${S.cfg.provider==="claude"?'Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>':'Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>'}</span>
@@ -1414,17 +1418,18 @@ function renderBackup(v){
       <div class="row"><button class="btn" type="submit" id="cfgSave">Save and test</button><span class="small" id="cfgMsg" role="status" style="flex:1;min-width:0"></span></div>
       ${S.cfg.provider==="gemini"?'<p class="note">Free-tier limits and terms are set by Google and can change.</p>':'<p class="note">Claude API use is billed to your Anthropic account, separately from a Claude plan.</p>'}
     </form>
-    <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Sync with GitHub</h2>
+    <form class="block stack" id="syForm" style="gap:10px" autocomplete="on"><h2 class="sec" style="margin:0">Sync with GitHub</h2>
       <p class="small">Keeps a backup file in your private GitHub repository. Sync merges both ways: for each word, the most recently changed copy wins, and deletions carry over.</p>
+      <input type="text" name="username" autocomplete="username" value="GitHub sync token" hidden readonly>
       <label class="f">Repository<span class="hint">owner/name, ideally private</span><input type="text" id="syRepo" value="${esc(syncCfg().repo)}" autocapitalize="none" spellcheck="false"></label>
-      <label class="f">Token<span class="hint">Fine-grained token with Contents: Read and write on that repository only. It stays on this phone.</span><input type="password" id="syToken" value="${esc(syncCfg().token)}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="github_pat_…"></label>
+      <label class="f">Token<span class="hint">Fine-grained token with Contents: Read and write on that repository only. It stays on this device; when you save, Safari or Chrome can keep it in your password manager and fill it in on your other devices.</span><input type="password" id="syToken" name="password" value="${esc(syncCfg().token)}" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="github_pat_…"></label>
       <details class="grp"><summary>File and branch</summary><div class="in">
         <label class="f">File<input type="text" id="syPath" value="${esc(syncCfg().path)}" autocapitalize="none" spellcheck="false"></label>
         <label class="f">Branch<input type="text" id="syBranch" value="${esc(syncCfg().branch)}" autocapitalize="none" spellcheck="false"></label>
       </div></details>
       <label class="row small" style="gap:8px;font-weight:500"><input type="checkbox" id="syAuto" ${syncCfg().auto?"checked":""} style="width:20px;height:20px;min-height:0"> Sync when the app opens</label>
-      <div class="row"><button class="btn" id="sySave">Save and sync now</button><span class="small" id="syMsg" role="status" style="flex:1;min-width:0">${syncCfg().lastSync?"Last synced "+esc(rel(syncCfg().lastSync))+" at "+new Date(syncCfg().lastSync).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):""}</span></div>
-    </div>
+      <div class="row"><button class="btn" type="submit" id="sySave">Save and sync now</button><span class="small" id="syMsg" role="status" style="flex:1;min-width:0">${syncCfg().lastSync?"Last synced "+esc(rel(syncCfg().lastSync))+" at "+new Date(syncCfg().lastSync).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):""}</span></div>
+    </form>
     <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Install on your iPhone</h2>
       <p class="small">Open this page in Safari, tap Share, then Add to Home Screen. Open it from the new icon: it runs full-screen and works offline.</p>
       <p class="small muted">Shortcuts and links open Safari rather than the Home Screen app, and the two keep separate words, so look words up from the app icon.</p>
@@ -1460,7 +1465,7 @@ function renderBackup(v){
     if(c.provider==="claude"){ c.claudeQuick=q||DEFAULT_CFG.claudeQuick; c.claudeFull=fu||DEFAULT_CFG.claudeFull; }
     else { c.geminiQuick=q||DEFAULT_CFG.geminiQuick; c.geminiFull=fu||DEFAULT_CFG.geminiFull; } };
   prov.onchange=()=>{ keepFields(); S.cfg.provider=prov.value; renderBackup(v); };
-  $("#sySave").onclick=async()=>{
+  $("#syForm").onsubmit=async(ev)=>{ ev.preventDefault();
     const c=syncCfg(); c.repo=$("#syRepo").value.trim().replace(/^https?:\/\/github\.com\//,"").replace(/\/$/,""); c.token=$("#syToken").value.trim();
     c.path=$("#syPath").value.trim()||"backup.json"; c.branch=$("#syBranch").value.trim()||"main"; c.auto=$("#syAuto").checked; saveCfg();
     const msg=$("#syMsg"); if(!syncReady()){ msg.textContent="Saved. Add a token to turn on sync."; return; }
@@ -1495,6 +1500,9 @@ document.addEventListener("click", ev=>{
   if(b.dataset.act==="addq"){ S.q=""; capture(b.dataset.w); return; }
   if(b.dataset.act==="filter"){ S.filter=b.dataset.k; } else { S.tag = S.tag===b.dataset.t ? "" : b.dataset.t; }
   render();
+});
+document.addEventListener("click", ev=>{
+  const sp=ev.target.closest(".isp [data-act='speak']"); if(sp){ ev.preventDefault(); speak(sp.dataset.text); }
 });
 document.addEventListener("click", ev=>{
   const b=ev.target.closest("[data-ck]"); if(!b || !S.check) return;
