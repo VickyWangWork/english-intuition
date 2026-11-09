@@ -244,6 +244,8 @@ nav.tabs .badge{position:absolute;top:8px;left:calc(50% + 8px);min-width:17px;he
   <a href="#backup" data-tab="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>More</a>
 </div></nav>
 
+<script src="config.js"></script>
+<script src="vendor/supabase.js"></script>
 <script>
 (function(){
 "use strict";
@@ -369,12 +371,12 @@ function saveFail(){ toast("Couldn't save on this phone. Free up some storage an
 function put(entry){
   entry = clone(entry); entry.updated = Date.now();
   S.entries.set(entry.id, entry); idbPut(entry).catch(saveFail);
-  refreshBadge(); scheduleSync(4000);
+  refreshBadge(); scheduleSync(4000); markDirty(entry.id);
 }
 const TOMB_KEY="english-intuition.deleted.v1";
 S.tomb=(()=>{ try{ return JSON.parse(localStorage.getItem(TOMB_KEY)||"{}")||{}; }catch{ return {}; } })();
 function saveTomb(){ try{ localStorage.setItem(TOMB_KEY, JSON.stringify(S.tomb)); }catch{} }
-function removeEntry(id){ S.entries.delete(id); S.tomb[id]=Date.now(); saveTomb(); idbDel(id).catch(saveFail); refreshBadge(); scheduleSync(4000); }
+function removeEntry(id){ S.entries.delete(id); S.tomb[id]=Date.now(); saveTomb(); idbDel(id).catch(saveFail); refreshBadge(); scheduleSync(4000); markDirty(id); }
 window.addEventListener("online", ()=>{ retryLookups(true); softRender(true); });
 window.addEventListener("offline", ()=>softRender(true));
 async function startLocal(){
@@ -393,6 +395,7 @@ async function init(){
   await startLocal();
   retryLookups(false);
   if(syncReady() && syncCfg().auto) runSync(true);
+  initCloud();
 }
 
 /* ---------- review logic ---------- */
@@ -436,8 +439,180 @@ function mask(text, e){ return esc(text).replace(new RegExp("\\b("+forms(e).map(
 function norm(s){ return String(s||"").toLowerCase().replace(/[’']/g,"'").replace(/[^a-z' -]/g,"").replace(/\s+/g," ").trim(); }
 
 
+
+/* ---------- Account, cloud sync and shared AI (Supabase) ---------- */
+const CLOUD=window.EI_CONFIG||{};
+const CLOUD_SINCE="english-intuition.cloud.since", CLOUD_USER="english-intuition.cloud.user", DIRTY_KEY="english-intuition.cloud.dirty";
+S.user=null; S.cloud=null; S.cloudLast=0; S.acctHidden=false;
+S.dirty=(()=>{ try{ return JSON.parse(localStorage.getItem(DIRTY_KEY)||"{}")||{}; }catch{ return {}; } })();
+function saveDirty(){ try{ localStorage.setItem(DIRTY_KEY, JSON.stringify(S.dirty)); }catch{} }
+function cloudOn(){ return !!(window.__cloudMock || (CLOUD.supabaseUrl && CLOUD.supabaseKey && window.supabase && window.supabase.createClient)); }
+function cloud(){
+  if(S.cloud) return S.cloud;
+  if(window.__cloudMock) return (S.cloud=window.__cloudMock);
+  if(!cloudOn()) return null;
+  S.cloud=window.supabase.createClient(CLOUD.supabaseUrl, CLOUD.supabaseKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"pkce", storageKey:"english-intuition.auth"}});
+  return S.cloud;
+}
+function markDirty(id){ if(!S.user) return; S.dirty[id]=1; saveDirty(); cloudSchedule(3000); }
+let cloudT=null;
+function cloudSchedule(delay){ if(!S.user) return; clearTimeout(cloudT); cloudT=setTimeout(()=>{ if(navigator.onLine) cloudSync(true); }, delay); }
+window.addEventListener("online", ()=>cloudSchedule(800));
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && Date.now()-S.cloudLast>30000) cloudSchedule(400); });
+setInterval(()=>{ if(!document.hidden && navigator.onLine && S.user) cloudSync(true); }, 180000);
+
+async function initCloud(){
+  const sb=cloud(); if(!sb) return;
+  try{ const r=await sb.auth.getSession(); if(r && r.data && r.data.session) S.user=r.data.session.user; }catch{}
+  try{ sb.auth.onAuthStateChange((event, session)=>{
+    const before=S.user&&S.user.id; S.user=session?session.user:null;
+    if(S.user && S.user.id!==before) setTimeout(()=>signedIn(false),0);
+    else if(!S.user && before){ S.sample=makeAI(); softRender(true); }
+  }); }catch{}
+  if(/[?&](code|error_description)=/.test(location.search)){
+    const err=new URLSearchParams(location.search).get("error_description");
+    history.replaceState(null, "", location.pathname+(location.hash||"#words"));
+    if(err) toast("Sign-in didn't finish: "+err);
+  }
+  if(S.user) signedIn(true);
+}
+function signedIn(restored){
+  let prev=null; try{ prev=localStorage.getItem(CLOUD_USER); }catch{}
+  if(prev && prev!==S.user.id){ // someone else used this device before: clear their words from here (they're safe in their account)
+    for(const id of [...S.entries.keys()]) idbDel(id).catch(()=>{});
+    S.entries.clear(); S.tomb={}; saveTomb();
+  }
+  if(prev!==S.user.id || !restored){ // a fresh sign-in: send up everything on this device, and fetch everything from the account
+    try{ localStorage.setItem(CLOUD_USER, S.user.id); if(prev!==S.user.id) localStorage.setItem(CLOUD_SINCE, "1970-01-01T00:00:00Z"); }catch{}
+    S.dirty={}; for(const id of S.entries.keys()) S.dirty[id]=1; for(const id in S.tomb) S.dirty[id]=1; saveDirty();
+    if(!restored) toast(`Signed in as ${S.user.email||"you"}. Syncing your words…`);
+  }
+  S.sample=makeAI(); softRender(true);
+  cloudSync(true).then(()=>retryLookups(true));
+}
+let cloudBusy=null;
+async function cloudSync(quiet){
+  const sb=cloud(); if(!sb || !S.user) return null;
+  if(!navigator.onLine){ if(!quiet) toast("You're offline. Your words will sync when you're back online."); return null; }
+  if(cloudBusy) return cloudBusy;
+  const run=(async()=>{
+    let since="1970-01-01T00:00:00Z"; try{ since=localStorage.getItem(CLOUD_SINCE)||since; }catch{}
+    let newest=since, pulled=0, removed=0;
+    for(let from=0;;from+=500){
+      const { data, error } = await sb.from("entries").select("id,data,updated,deleted,synced_at").gte("synced_at", since).order("synced_at", {ascending:true}).range(from, from+499);
+      if(error) throw error;
+      for(const row of data||[]){
+        if(row.synced_at>newest) newest=row.synced_at;
+        const l=S.entries.get(row.id), ru=Number(row.updated)||0;
+        if(row.deleted){
+          if((S.tomb[row.id]||0)<ru) S.tomb[row.id]=ru;
+          if(l && (l.updated||0)<=ru){ S.entries.delete(row.id); idbDel(row.id).catch(()=>{}); delete S.dirty[row.id]; removed++; }
+          continue;
+        }
+        if(!row.data || (S.tomb[row.id]||0)>=ru) continue;
+        if(!l || (l.updated||0)<ru){ S.entries.set(row.id, row.data); idbPut(row.data).catch(saveFail); delete S.dirty[row.id]; pulled++; }
+      }
+      if(!data || data.length<500) break;
+    }
+    saveTomb(); saveDirty();
+    const ids=Object.keys(S.dirty); let pushed=0;
+    if(ids.length){
+      const ver=id=>{ const e=S.entries.get(id); return e?(e.updated||0):-(S.tomb[id]||0); };
+      const snap={}; ids.forEach(id=>{ snap[id]=ver(id); });
+      const rows=ids.map(id=>{ const e=S.entries.get(id); return e?{user_id:S.user.id, id, data:e, updated:e.updated||Date.now(), deleted:false}:{user_id:S.user.id, id, data:null, updated:S.tomb[id]||Date.now(), deleted:true}; });
+      for(let i=0;i<rows.length;i+=200){ const { error } = await sb.from("entries").upsert(rows.slice(i,i+200), {onConflict:"user_id,id"}); if(error) throw error; }
+      for(const id of ids) if(ver(id)===snap[id]) delete S.dirty[id];   // changed again while uploading? keep it for next time
+      saveDirty(); pushed=rows.length;
+    }
+    try{ localStorage.setItem(CLOUD_SINCE, newest); }catch{}
+    S.cloudLast=Date.now(); refreshBadge();
+    return {pulled, removed, pushed};
+  })();
+  cloudBusy=run;
+  try{
+    const r=await run;
+    if(r.pulled||r.removed){ toast("Synced: "+[r.pulled?r.pulled+" updated":"", r.removed?r.removed+" removed":""].filter(Boolean).join(", ")+"."); softRender(true); }
+    else if(!quiet) toast(r.pushed?"Synced.":"Already in sync.");
+    return r;
+  }catch(e){ if(!quiet) toast("Couldn't sync: "+((e&&e.message)||"try again in a moment")); return null; }
+  finally{ cloudBusy=null; }
+}
+async function cloudAI(prompt, opts){
+  if(!navigator.onLine) throw {code:"offline"};
+  const sb=cloud(); if(!sb || !S.user) throw {code:"bad_key", cloud:true, message:"Sign in under More to use AI look-ups."};
+  const once=async()=>{
+    let res;
+    try{ res=await sb.functions.invoke("ai", {body:{prompt, tier:opts.modelTier==="quick"?"quick":"full"}}); }
+    catch{ throw {code:"upstream_error", cloud:true, message:"Couldn't reach the AI service. Try again in a moment."}; }
+    const data=res&&res.data, error=res&&res.error;
+    if(error){
+      let info={}, status=0; try{ status=(error.context&&error.context.status)||0; info=await error.context.json(); }catch{}
+      if(info.error==="daily_limit") throw {code:"rate_limited", cloud:true, message:`You've used today's ${info.limit} AI look-ups. They reset tomorrow; words in the offline pack still work.`};
+      if(status===401 || info.error==="sign_in") throw {code:"bad_key", cloud:true, message:"Please sign in again under More."};
+      if(info.error==="refused") throw {code:"refused"};
+      if(info.error==="not_configured") throw {code:"bad_request", cloud:true, message:"AI look-ups aren't switched on in the server yet."};
+      throw {code:"upstream_error", cloud:true, message:"The AI service is busy. Try again in a moment."};
+    }
+    return parseJSONLoose(data && data.text);
+  };
+  try{ return await once(); }catch(e){ if(e && e.code==="invalid_json") return await once(); throw e; }
+}
+// Your own key (if saved) wins; otherwise signed-in people use the shared AI.
+const ownAI=makeAI;
+makeAI=function(){ const own=ownAI(); if(own) return own; if(S.user && cloud()) return {json:(p,o)=>cloudAI(p,o||{})}; return null; };
+
+function accountBanner(){
+  if(!cloudOn() || S.user || S.acctHidden) return "";
+  return `<div class="checkcard"><p><strong>Sign in to sync and look words up</strong><br><span class="small muted">Keep your words on all your devices, and use AI look-ups without your own key.</span></p><div class="row"><a class="btn" href="#backup">Sign in</a><button class="btn quiet" type="button" id="acctLater">Not now</button></div></div>`;
+}
+function accountHTML(){
+  if(!cloudOn()) return "";
+  if(S.user) return `<div class="stack" style="gap:10px"><h2 class="sec" style="margin:0">Account</h2>
+     <p class="small">Signed in as <strong>${esc(S.user.email||"you")}</strong>. Your words sync automatically on every device where you sign in.</p>
+     <p class="small muted">${S.cloudLast?"Last synced at "+new Date(S.cloudLast).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"Syncing…"}</p>
+     <div class="row"><button class="btn" type="button" id="acctSync">Sync now</button><button class="btn ghost" type="button" id="acctOut">Sign out</button></div>
+     <div id="acctOutConfirm" hidden class="confirm"><span style="flex:1;min-width:0">Also remove your words from this device? They stay safe in your account.</span><button class="btn danger" type="button" id="acctOutWipe">Remove and sign out</button><button class="btn quiet" type="button" id="acctOutKeep">Keep and sign out</button></div>
+   </div>`;
+  const standalone=window.navigator.standalone===true || !!(window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+  return `<div class="stack" style="gap:10px"><h2 class="sec" style="margin:0">Account</h2>
+     <p class="small">Sign in to keep your words in sync on all your devices and to use AI look-ups without your own key.</p>
+     ${CLOUD.google===false?"":`<button class="btn block" type="button" id="acctGoogle">Continue with Google</button>${standalone?`<p class="note">In the Home Screen app, the email code is more reliable than Google.</p>`:""}`}
+     <form class="stack" id="acctEmailForm" style="gap:8px">
+       <label class="f">${CLOUD.google===false?"Email":"Or sign in with a code by email"}<input type="email" id="acctEmail" name="email" autocomplete="email" placeholder="you@example.com" required></label>
+       <button class="btn ghost" type="submit">Email me a code</button>
+     </form>
+     <form class="stack" id="acctCodeForm" style="gap:8px" hidden>
+       <label class="f">Code from the email<input type="text" id="acctCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" required></label>
+       <div class="row"><button class="btn" type="submit">Sign in</button><button class="btn quiet" type="button" id="acctBack">Use a different email</button></div>
+     </form>
+     <p class="small" id="acctMsg" role="status"></p>
+   </div>`;
+}
+function bindAccount(v){
+  const sb=cloud(); if(!sb) return;
+  const msg=t=>{ const m=$("#acctMsg"); if(m) m.textContent=t; };
+  const g=$("#acctGoogle"); if(g) g.onclick=async()=>{ msg("Opening Google…"); try{ const r=await sb.auth.signInWithOAuth({provider:"google", options:{redirectTo:location.origin+location.pathname}}); if(r&&r.error) msg(r.error.message); }catch{ msg("Couldn't start Google sign-in. Try the email code instead."); } };
+  const ef=$("#acctEmailForm"); if(ef) ef.onsubmit=async ev=>{ ev.preventDefault(); const email=$("#acctEmail").value.trim(); msg("Sending…");
+    let r; try{ r=await sb.auth.signInWithOtp({email, options:{shouldCreateUser:true}}); }catch{ r={error:{message:"Couldn't reach the sign-in service. Check your connection."}}; }
+    if(r && r.error){ msg(/rate|limit|seconds/i.test(r.error.message)?"Too many emails just now. Wait a few minutes, then try again.":r.error.message); return; }
+    S.otpEmail=email; ef.hidden=true; $("#acctCodeForm").hidden=false; msg(`Code sent to ${email}. It can take a minute; check spam too.`); setTimeout(()=>{ const c=$("#acctCode"); if(c) c.focus(); },50); };
+  const back=$("#acctBack"); if(back) back.onclick=()=>{ $("#acctCodeForm").hidden=true; ef.hidden=false; msg(""); };
+  const cf=$("#acctCodeForm"); if(cf) cf.onsubmit=async ev=>{ ev.preventDefault(); msg("Checking…");
+    let r; try{ r=await sb.auth.verifyOtp({email:S.otpEmail, token:$("#acctCode").value.replace(/\s/g,""), type:"email"}); }catch{ r={error:{}}; }
+    if(r && r.error){ msg("That code didn't work. Check it, or ask for a new one."); return; } msg(""); };
+  const sy=$("#acctSync"); if(sy) sy.onclick=async()=>{ await cloudSync(false); if(route().v==="backup") renderBackup(v); };
+  const out=$("#acctOut"); if(out) out.onclick=()=>{ $("#acctOutConfirm").hidden=false; };
+  const doOut=async wipe=>{
+    await cloudSync(true); try{ await sb.auth.signOut(); }catch{} S.user=null;
+    if(wipe){ for(const id of [...S.entries.keys()]) idbDel(id).catch(()=>{}); S.entries.clear(); S.tomb={}; saveTomb(); try{ localStorage.removeItem(CLOUD_USER); }catch{} }
+    S.dirty={}; saveDirty(); S.sample=makeAI(); toast(wipe?"Signed out and removed your words from this device.":"Signed out."); render(); };
+  const w=$("#acctOutWipe"); if(w) w.onclick=()=>doOut(true);
+  const k=$("#acctOutKeep"); if(k) k.onclick=()=>doOut(false);
+}
+function syncAll(quiet){ if(S.user) cloudSync(quiet); if(syncReady()) runSync(quiet); }
+
 /* ---------- GitHub sync: one backup file in your private repository ---------- */
-const DEFAULT_SYNC={repo:"VickyWangWork/english-intuition-data", path:"backup.json", branch:"main", token:"", auto:true, lastSync:0};
+const DEFAULT_SYNC={repo:"", path:"backup.json", branch:"main", token:"", auto:true, lastSync:0};
 function syncCfg(){ S.cfg.sync=Object.assign(clone(DEFAULT_SYNC), S.cfg.sync||{}); return S.cfg.sync; }
 function syncReady(){ const c=syncCfg(); return !!(c.token && c.repo && c.path); }
 function b64e(str){ const b=new TextEncoder().encode(str); let bin=""; for(let i=0;i<b.length;i+=0x8000) bin+=String.fromCharCode.apply(null, b.subarray(i,i+0x8000)); return btoa(bin); }
@@ -481,7 +656,7 @@ async function ghSync(quiet){
       // bring this phone up to date
       let pulled=0, removed=0;
       const keep=new Set(merged.entries.map(e=>e.id));
-      for(const e of merged.entries){ const l=S.entries.get(e.id); if(!l || (l.updated||0)<(e.updated||0)){ S.entries.set(e.id, e); idbPut(e).catch(saveFail); pulled++; } }
+      for(const e of merged.entries){ const l=S.entries.get(e.id); if(!l || (l.updated||0)<(e.updated||0)){ S.entries.set(e.id, e); idbPut(e).catch(saveFail); markDirty(e.id); pulled++; } }
       for(const id of [...S.entries.keys()]) if(!keep.has(id)){ S.entries.delete(id); idbDel(id).catch(()=>{}); removed++; }
       S.tomb=merged.deleted; saveTomb();
       // push if GitHub's copy differs
@@ -513,14 +688,14 @@ async function runSync(quiet){
   }catch(e){ if(!quiet || (e&&e.code!=="offline"&&e.code!=="no_sync")) toast((e&&e.message)||"Sync failed. Try again."); }
   finally{ const b2=document.querySelector("[data-act='sync']"); if(b2) b2.classList.remove("spin"); }
 }
-document.addEventListener("click", ev=>{ const b=ev.target.closest("[data-act='sync']"); if(b){ ev.preventDefault(); runSync(false); } });
+document.addEventListener("click", ev=>{ const b=ev.target.closest("[data-act='sync']"); if(b){ ev.preventDefault(); syncAll(false); } });
 // Automatic sync: after changes (batched), when the app comes back online or to the front, and every 3 minutes while open.
 let autoT=null;
 function scheduleSync(delay){ if(!syncReady() || !syncCfg().auto) return; clearTimeout(autoT); autoT=setTimeout(()=>{ if(navigator.onLine) runSync(true); }, delay); }
 window.addEventListener("online", ()=>scheduleSync(1000));
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && Date.now()-(syncCfg().lastSync||0)>30000) scheduleSync(500); });
 setInterval(()=>{ if(!document.hidden && navigator.onLine && syncReady() && syncCfg().auto) runSync(true); }, 180000);
-function syncBtn(){ return syncReady()?`<button class="iconbtn" data-act="sync" aria-label="Sync with GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/></svg></button>`:""; }
+function syncBtn(){ return (syncReady()||S.user)?`<button class="iconbtn" data-act="sync" aria-label="Sync with GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/></svg></button>`:""; }
 
 /* ---------- AI service, called with your own key ---------- */
 const DEFAULT_CFG={v:2, provider:"gemini", keys:{gemini:"",claude:""}, geminiQuick:"gemini-flash-lite-latest", geminiFull:"gemini-flash-lite-latest", claudeQuick:"claude-haiku-5-5", claudeFull:"claude-haiku-5-5"};
@@ -661,6 +836,7 @@ ${SCHEMA}`;
 function sampleErr(e){
   const c=e&&e.code;
   if(c==="cancelled") return "";
+  if(e && e.cloud && e.message) return e.message;
   if(!navigator.onLine || c==="offline") return "You're offline. This needs an internet connection.";
   if(c==="bad_key") return "Your AI key was rejected. Check it in More → AI settings.";
   if(c==="bad_request") return "The AI service rejected the request"+(e.message?` (${e.message})`:"")+". Check the model names in More → AI settings.";
@@ -788,6 +964,7 @@ function renderWords(v){
       <button class="btn ghost" type="button" id="pasteBtn">Paste</button>
       <button class="btn" type="submit">Add</button>
     </form>
+    ${accountBanner()}
     ${checkCard()}
     <input type="search" id="searchIn" placeholder="Search your words" value="${esc(S.q)}" aria-label="Search your words">
     <div class="filters">${f("all","All")}${f("due","Due")}${f("shaky","Shaky")}${nCap?f("captured",`Not built (${nCap})`):""}
@@ -801,8 +978,9 @@ function renderWords(v){
         </div>${statusChip(e)}
       </a>${e.captured?"":`<div class="isp">${speakBtn(e.word)}</div>`}</div>`).join("")}${addRow}</div>`
       : `<div class="list">${addRow||`<div class="empty">${all.length?"No words match. Try another search or filter.":"Your dictionary is empty. Type your first word above."}</div>`}</div>`}
-    <p class="note">Saved on this phone. Use More → Export to back up or move your words.</p>
+    <p class="note">${S.user?`Synced to your account (${esc(S.user.email||"signed in")}).`:(cloudOn()?"Saved on this device. Sign in under More to sync across devices.":"Saved on this phone. Use More → Export to back up or move your words.")}</p>
   </div>`;
+  const al=$("#acctLater"); if(al) al.onclick=()=>{ S.acctHidden=true; render(); };
   if(S.focusCapture){ S.focusCapture=false; setTimeout(()=>{ try{ $("#capIn").focus(); }catch{} },120); }
   const pb=$("#pasteBtn"); if(pb) pb.onclick=async()=>{
     try{ const t=String(await navigator.clipboard.readText()||"").trim(); if(!t){ toast("The clipboard is empty"); return; }
@@ -1411,7 +1589,10 @@ function renderBackup(v){
   const all=[...S.entries.values()];
   v.innerHTML=`<div class="stack">${notes()}
     <div class="banner">Your words are saved on this phone. Export a backup now and then to keep them safe or move them to another device.</div>
+    ${accountHTML()}
+    ${cloudOn()?`<details class="grp" ${(S.cfg.keys.gemini||S.cfg.keys.claude)?"open":""}><summary>Your own AI key (optional)</summary><div class="in">`:""}
     <form class="stack" id="cfgForm" style="gap:10px" autocomplete="on"><h2 class="sec" style="margin:0">AI settings</h2>
+      ${cloudOn()?`<p class="small muted">Signed-in people don't need a key. Add one only if you want look-ups to use your own Gemini or Claude allowance.</p>`:""}
       <p class="small">New words are written by an AI service using your own key. The key stays on this device and is never uploaded to GitHub. When you save, Safari or Chrome can offer to keep it in your password manager (iCloud Keychain or Google Password Manager), so your other devices fill it in with one tap.</p>
       <input type="text" name="username" autocomplete="username" value="${S.cfg.provider==="claude"?"Claude API key":"Gemini API key"}" hidden readonly>
       <label class="f">Service<select id="cfgProvider"><option value="gemini" ${S.cfg.provider==="gemini"?"selected":""}>Google Gemini (free tier)</option><option value="claude" ${S.cfg.provider==="claude"?"selected":""}>Claude (Anthropic API, paid)</option></select></label>
@@ -1424,10 +1605,12 @@ function renderBackup(v){
       <div class="row"><button class="btn" type="submit" id="cfgSave">Save and test</button><span class="small" id="cfgMsg" role="status" style="flex:1;min-width:0"></span></div>
       ${S.cfg.provider==="gemini"?'<p class="note">Free-tier limits and terms are set by Google and can change.</p>':'<p class="note">Claude API use is billed to your Anthropic account, separately from a Claude plan.</p>'}
     </form>
-    <form class="block stack" id="syForm" style="gap:10px" autocomplete="on"><h2 class="sec" style="margin:0">Sync with GitHub</h2>
+    ${cloudOn()?`</div></details>`:""}
+    ${cloudOn()?`<details class="grp" ${syncReady()?"open":""}><summary>GitHub backup (optional)</summary><div class="in">`:""}
+    <form class="${cloudOn()?"":"block "}stack" id="syForm" style="gap:10px" autocomplete="on"><h2 class="sec" style="margin:0">Sync with GitHub</h2>
       <p class="small">Keeps a backup file in your private GitHub repository. Sync merges both ways: for each word, the most recently changed copy wins, and deletions carry over.</p>
       <input type="text" name="username" autocomplete="username" value="GitHub sync token" hidden readonly>
-      <label class="f">Repository<span class="hint">owner/name, ideally private</span><input type="text" id="syRepo" value="${esc(syncCfg().repo)}" autocapitalize="none" spellcheck="false"></label>
+      <label class="f">Repository<span class="hint">owner/name of a private repository. Leave blank to use your-username/english-intuition-data.</span><input type="text" id="syRepo" value="${esc(syncCfg().repo)}" autocapitalize="none" spellcheck="false"></label>
       <label class="f">Token<span class="hint">Fine-grained token with Contents: Read and write on that repository only. It stays on this device; when you save, Safari or Chrome can keep it in your password manager and fill it in on your other devices.</span><input type="password" id="syToken" name="password" value="${esc(syncCfg().token)}" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="github_pat_…"></label>
       <details class="grp"><summary>File and branch</summary><div class="in">
         <label class="f">File<input type="text" id="syPath" value="${esc(syncCfg().path)}" autocapitalize="none" spellcheck="false"></label>
@@ -1436,6 +1619,7 @@ function renderBackup(v){
       <label class="row small" style="gap:8px;font-weight:500"><input type="checkbox" id="syAuto" ${syncCfg().auto?"checked":""} style="width:20px;height:20px;min-height:0"> Sync automatically: when the app opens, after each change, and every few minutes while it's open</label>
       <div class="row"><button class="btn" type="submit" id="sySave">Save and sync now</button><span class="small" id="syMsg" role="status" style="flex:1;min-width:0">${syncCfg().lastSync?"Last synced "+esc(rel(syncCfg().lastSync))+" at "+new Date(syncCfg().lastSync).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):""}</span></div>
     </form>
+    ${cloudOn()?`</div></details>`:""}
     <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Install on your iPhone</h2>
       <p class="small">Open this page in Safari, tap Share, then Add to Home Screen. Open it from the new icon: it runs full-screen and works offline.</p>
       <p class="small muted">Shortcuts and links open Safari rather than the Home Screen app, and the two keep separate words, so look words up from the app icon.</p>
@@ -1465,6 +1649,7 @@ function renderBackup(v){
   };
   $("#expCopy").onclick=()=>copyText($("#expText").value, $("#expText"));
   v.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>{ const n=document.getElementById(b.dataset.copy); copyText(n.value, n); });
+  bindAccount(v);
   const prov=$("#cfgProvider");
   const keepFields=()=>{ const c=S.cfg; c.keys[c.provider]=$("#cfgKey").value.trim();
     const q=$("#cfgQuick").value.trim(), fu=$("#cfgFull").value.trim();
@@ -1473,6 +1658,7 @@ function renderBackup(v){
   prov.onchange=()=>{ keepFields(); S.cfg.provider=prov.value; renderBackup(v); };
   $("#syForm").onsubmit=async(ev)=>{ ev.preventDefault();
     const c=syncCfg(); c.repo=$("#syRepo").value.trim().replace(/^https?:\/\/github\.com\//,"").replace(/\/$/,""); c.token=$("#syToken").value.trim();
+    if(!c.repo && c.token){ try{ const u=await (await fetch("https://api.github.com/user",{headers:{Authorization:"Bearer "+c.token}})).json(); if(u && u.login){ c.repo=u.login+"/english-intuition-data"; $("#syRepo").value=c.repo; } }catch{} }
     c.path=$("#syPath").value.trim()||"backup.json"; c.branch=$("#syBranch").value.trim()||"main"; c.auto=$("#syAuto").checked; saveCfg();
     const msg=$("#syMsg"); if(!syncReady()){ msg.textContent="Saved. Add a token to turn on sync."; return; }
     msg.textContent="Syncing…";
