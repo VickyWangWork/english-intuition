@@ -513,11 +513,17 @@ document.addEventListener("click", ev=>{ const b=ev.target.closest("[data-act='s
 function syncBtn(){ return syncReady()?`<button class="iconbtn" data-act="sync" aria-label="Sync with GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/></svg></button>`:""; }
 
 /* ---------- AI service, called with your own key ---------- */
-const DEFAULT_CFG={provider:"gemini", keys:{gemini:"",claude:""}, geminiQuick:"gemini-flash-lite-latest", geminiFull:"gemini-flash-lite-latest", claudeQuick:"claude-haiku-5-5", claudeFull:"claude-haiku-5-5"};
+const DEFAULT_CFG={v:2, provider:"gemini", keys:{gemini:"",claude:""}, geminiQuick:"gemini-flash-lite-latest", geminiFull:"gemini-flash-lite-latest", claudeQuick:"claude-haiku-5-5", claudeFull:"claude-haiku-5-5"};
 const CFG_KEY="english-intuition.ai.v1";
 function loadCfg(){
   let c={}; try{ c=JSON.parse(localStorage.getItem(CFG_KEY)||"{}")||{}; }catch{}
-  const out=Object.assign(clone(DEFAULT_CFG), c); out.keys=Object.assign({gemini:"",claude:""}, c.keys||{}); return out;
+  const out=Object.assign(clone(DEFAULT_CFG), c); out.keys=Object.assign({gemini:"",claude:""}, c.keys||{});
+  if(!c.v){ // settings saved before Flash-Lite became the default: move them over once
+    if(out.geminiQuick==="gemini-flash-latest") out.geminiQuick=DEFAULT_CFG.geminiQuick;
+    if(out.geminiFull==="gemini-flash-latest") out.geminiFull=DEFAULT_CFG.geminiFull;
+    out.v=2; try{ localStorage.setItem(CFG_KEY, JSON.stringify(out)); }catch{}
+  }
+  return out;
 }
 function saveCfg(){ try{ localStorage.setItem(CFG_KEY, JSON.stringify(S.cfg)); }catch{ toast("Couldn't save settings on this phone."); } }
 function makeAI(){ const c=S.cfg; if(!c || !c.keys[c.provider]) return null; return { json:(prompt,opts)=>aiJSON(prompt,opts||{}) }; }
@@ -555,10 +561,12 @@ async function aiJSONOnce(prompt, opts){
       // Try the chosen model; if it's overloaded, over its free limit or too slow, fall back to Flash-Lite.
       const LITE="gemini-flash-lite-latest";
       const first=String(quick?c.geminiQuick:c.geminiFull).replace(/^models\//,"");
-      const models=first===LITE?[LITE]:[first,LITE];
+      const down=S.modelDown||(S.modelDown={});   // models that recently failed are skipped for 15 minutes
+      const models=(first===LITE?[LITE]:[first,LITE]).filter((m,i,a)=>i===a.length-1 || !(down[m]>Date.now()));
       let lastErr=null;
       for(const model of models){
-        const ac=new AbortController(); const to=setTimeout(()=>ac.abort(), quick?20000:45000);
+        const last=model===models[models.length-1];
+        const ac=new AbortController(); const to=setTimeout(()=>ac.abort(), last?(quick?20000:45000):(quick?6000:12000));
         if(opts.signal) opts.signal.addEventListener("abort",()=>ac.abort(),{once:true});
         let r, j;
         try{
@@ -566,9 +574,9 @@ async function aiJSONOnce(prompt, opts){
             headers:{"content-type":"application/json","x-goog-api-key":key},
             body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}], generationConfig:{responseMimeType:"application/json", temperature:0.4}})});
           j=await r.json().catch(()=>({}));
-        }catch(e){ clearTimeout(to); if(opts.signal&&opts.signal.aborted) throw {code:"cancelled"}; lastErr={code:"upstream_error",message:"The AI service took too long to answer."}; continue; }
+        }catch(e){ clearTimeout(to); if(opts.signal&&opts.signal.aborted) throw {code:"cancelled"}; lastErr={code:"upstream_error",message:"The AI service took too long to answer."}; down[model]=Date.now()+15*60000; continue; }
         clearTimeout(to);
-        if(r.status===503 || r.status===429 || r.status===500){ lastErr=httpErr(r.status, j&&j.error&&j.error.message); continue; }
+        if(r.status===503 || r.status===429 || r.status===500){ lastErr=httpErr(r.status, j&&j.error&&j.error.message); down[model]=Date.now()+15*60000; continue; }
         if(!r.ok) throw httpErr(r.status, j&&j.error&&j.error.message);
         const cand=arr(j.candidates)[0];
         if(!cand){ if(j.promptFeedback&&j.promptFeedback.blockReason) throw {code:"refused"}; lastErr={code:"upstream_error"}; continue; }
