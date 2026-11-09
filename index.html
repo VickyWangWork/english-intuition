@@ -580,6 +580,7 @@ function accountHTML(){
      <form class="stack" id="acctEmailForm" style="gap:8px">
        <label class="f">${CLOUD.google===false?"Sign in by email":"Or sign in by email"}<input type="email" id="acctEmail" name="email" autocomplete="email" placeholder="you@example.com" required></label>
        <button class="btn ${CLOUD.google===false?"":"ghost"}" type="submit">Email me a sign-in link</button>
+       <button class="btn quiet" type="button" id="acctHave">I already have a sign-in email</button>
      </form>
      <form class="stack" id="acctCodeForm" style="gap:8px" hidden>
        <label class="f">Sign-in link or code from the email<span class="hint">In the Home Screen app: in Mail, press and hold the sign-in link, choose Copy Link, then paste it here.</span><input type="text" id="acctCode" autocomplete="one-time-code" autocapitalize="none" spellcheck="false" required></label>
@@ -594,8 +595,9 @@ function bindAccount(v){
   const g=$("#acctGoogle"); if(g) g.onclick=async()=>{ msg("Opening Google…"); try{ const r=await sb.auth.signInWithOAuth({provider:"google", options:{redirectTo:location.origin+location.pathname}}); if(r&&r.error) msg(r.error.message); }catch{ msg("Couldn't start Google sign-in. Try the email code instead."); } };
   const ef=$("#acctEmailForm"); if(ef) ef.onsubmit=async ev=>{ ev.preventDefault(); const email=$("#acctEmail").value.trim(); msg("Sending…");
     let r; try{ r=await sb.auth.signInWithOtp({email, options:{shouldCreateUser:true, emailRedirectTo:location.origin+location.pathname}}); }catch{ r={error:{message:"Couldn't reach the sign-in service. Check your connection."}}; }
-    if(r && r.error){ msg(/rate|limit|seconds/i.test(r.error.message)?"Too many emails just now. Wait a few minutes, then try again.":r.error.message); return; }
+    if(r && r.error){ if(/rate|limit|seconds/i.test(r.error.message)){ S.otpEmail=email; ef.hidden=true; $("#acctCodeForm").hidden=false; msg("Too many emails just now. If an earlier sign-in email arrived, paste its link below. Otherwise wait a few minutes and try again."); } else msg(r.error.message); return; }
     S.otpEmail=email; ef.hidden=true; $("#acctCodeForm").hidden=false; msg(`Email sent to ${email}. Tap the sign-in link on this device, or paste the link (or code) below. It can take a minute; check spam too.`); setTimeout(()=>{ const c=$("#acctCode"); if(c) c.focus(); },50); };
+  const have=$("#acctHave"); if(have) have.onclick=()=>{ S.otpEmail=($("#acctEmail").value||"").trim()||S.otpEmail; ef.hidden=true; $("#acctCodeForm").hidden=false; msg("Paste the sign-in link from the email (press and hold it in Mail, then Copy Link). A 6-digit code works too if you typed your email first."); setTimeout(()=>{ const c=$("#acctCode"); if(c) c.focus(); },50); };
   const back=$("#acctBack"); if(back) back.onclick=()=>{ $("#acctCodeForm").hidden=true; ef.hidden=false; msg(""); };
   const cf=$("#acctCodeForm"); if(cf) cf.onsubmit=async ev=>{ ev.preventDefault(); msg("Checking…");
     const raw=$("#acctCode").value.trim(); let r;
