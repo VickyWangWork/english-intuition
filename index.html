@@ -369,12 +369,12 @@ function saveFail(){ toast("Couldn't save on this phone. Free up some storage an
 function put(entry){
   entry = clone(entry); entry.updated = Date.now();
   S.entries.set(entry.id, entry); idbPut(entry).catch(saveFail);
-  refreshBadge();
+  refreshBadge(); scheduleSync(4000);
 }
 const TOMB_KEY="english-intuition.deleted.v1";
 S.tomb=(()=>{ try{ return JSON.parse(localStorage.getItem(TOMB_KEY)||"{}")||{}; }catch{ return {}; } })();
 function saveTomb(){ try{ localStorage.setItem(TOMB_KEY, JSON.stringify(S.tomb)); }catch{} }
-function removeEntry(id){ S.entries.delete(id); S.tomb[id]=Date.now(); saveTomb(); idbDel(id).catch(saveFail); refreshBadge(); }
+function removeEntry(id){ S.entries.delete(id); S.tomb[id]=Date.now(); saveTomb(); idbDel(id).catch(saveFail); refreshBadge(); scheduleSync(4000); }
 window.addEventListener("online", ()=>{ retryLookups(true); softRender(true); });
 window.addEventListener("offline", ()=>softRender(true));
 async function startLocal(){
@@ -509,11 +509,17 @@ async function runSync(quiet){
     const r=await ghSync(quiet);
     const bits=[]; if(r.pulled) bits.push(`${r.pulled} updated from GitHub`); if(r.removed) bits.push(`${r.removed} removed`); if(r.pushed) bits.push("saved to GitHub");
     if(!quiet || r.pulled || r.removed) toast(bits.length?`Synced: ${bits.join(", ")}.`:"Already in sync.");
-    render();
+    if(r.pulled || r.removed || !quiet) softRender(true);
   }catch(e){ if(!quiet || (e&&e.code!=="offline"&&e.code!=="no_sync")) toast((e&&e.message)||"Sync failed. Try again."); }
   finally{ const b2=document.querySelector("[data-act='sync']"); if(b2) b2.classList.remove("spin"); }
 }
 document.addEventListener("click", ev=>{ const b=ev.target.closest("[data-act='sync']"); if(b){ ev.preventDefault(); runSync(false); } });
+// Automatic sync: after changes (batched), when the app comes back online or to the front, and every 3 minutes while open.
+let autoT=null;
+function scheduleSync(delay){ if(!syncReady() || !syncCfg().auto) return; clearTimeout(autoT); autoT=setTimeout(()=>{ if(navigator.onLine) runSync(true); }, delay); }
+window.addEventListener("online", ()=>scheduleSync(1000));
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && Date.now()-(syncCfg().lastSync||0)>30000) scheduleSync(500); });
+setInterval(()=>{ if(!document.hidden && navigator.onLine && syncReady() && syncCfg().auto) runSync(true); }, 180000);
 function syncBtn(){ return syncReady()?`<button class="iconbtn" data-act="sync" aria-label="Sync with GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/></svg></button>`:""; }
 
 /* ---------- AI service, called with your own key ---------- */
@@ -1427,7 +1433,7 @@ function renderBackup(v){
         <label class="f">File<input type="text" id="syPath" value="${esc(syncCfg().path)}" autocapitalize="none" spellcheck="false"></label>
         <label class="f">Branch<input type="text" id="syBranch" value="${esc(syncCfg().branch)}" autocapitalize="none" spellcheck="false"></label>
       </div></details>
-      <label class="row small" style="gap:8px;font-weight:500"><input type="checkbox" id="syAuto" ${syncCfg().auto?"checked":""} style="width:20px;height:20px;min-height:0"> Sync when the app opens</label>
+      <label class="row small" style="gap:8px;font-weight:500"><input type="checkbox" id="syAuto" ${syncCfg().auto?"checked":""} style="width:20px;height:20px;min-height:0"> Sync automatically: when the app opens, after each change, and every few minutes while it's open</label>
       <div class="row"><button class="btn" type="submit" id="sySave">Save and sync now</button><span class="small" id="syMsg" role="status" style="flex:1;min-width:0">${syncCfg().lastSync?"Last synced "+esc(rel(syncCfg().lastSync))+" at "+new Date(syncCfg().lastSync).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):""}</span></div>
     </form>
     <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Install on your iPhone</h2>

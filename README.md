@@ -23,7 +23,7 @@ Your words and your AI key are never uploaded: they stay on your phone. The repo
 Your words can be kept in a backup file (`backup.json`) in a separate **private** repository, e.g. `english-intuition-data`.
 1. Create a fine-grained token at https://github.com/settings/personal-access-tokens/new with access to only that repository and **Contents: Read and write**.
 2. In the app: **More → Sync with GitHub**, paste the token, tap **Save and sync now**.
-3. Afterwards, tap the sync button at the top of the word list, or let it sync each time the app opens.
+3. After that it syncs by itself whenever there is internet: when the app opens or comes back to the front, a few seconds after each change, and every 3 minutes while open. The sync button at the top of the word list forces one straight away.
 For each word the most recently changed copy wins; deleted words stay deleted everywhere.
 
 ## Move words from the Claude version
