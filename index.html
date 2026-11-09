@@ -513,7 +513,7 @@ document.addEventListener("click", ev=>{ const b=ev.target.closest("[data-act='s
 function syncBtn(){ return syncReady()?`<button class="iconbtn" data-act="sync" aria-label="Sync with GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/></svg></button>`:""; }
 
 /* ---------- AI service, called with your own key ---------- */
-const DEFAULT_CFG={provider:"gemini", keys:{gemini:"",claude:""}, geminiQuick:"gemini-flash-latest", geminiFull:"gemini-flash-latest", claudeQuick:"claude-haiku-5-5", claudeFull:"claude-haiku-5-5"};
+const DEFAULT_CFG={provider:"gemini", keys:{gemini:"",claude:""}, geminiQuick:"gemini-flash-lite-latest", geminiFull:"gemini-flash-lite-latest", claudeQuick:"claude-haiku-5-5", claudeFull:"claude-haiku-5-5"};
 const CFG_KEY="english-intuition.ai.v1";
 function loadCfg(){
   let c={}; try{ c=JSON.parse(localStorage.getItem(CFG_KEY)||"{}")||{}; }catch{}
@@ -536,36 +536,57 @@ function parseJSONLoose(t){
   if(a>=0 && b>a){ try{ return JSON.parse(t.slice(a,b+1)); }catch{} }
   throw {code:"invalid_json"};
 }
-async function aiJSON(prompt, opts){
+async function aiJSONOnce(prompt, opts){
   const c=S.cfg, quick=opts.modelTier==="quick", key=c.keys[c.provider];
   if(!navigator.onLine) throw {code:"offline"};
   let text="";
   try{
     if(c.provider==="claude"){
-      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:opts.signal,
+      const ac=new AbortController(); const to=setTimeout(()=>ac.abort(), quick?30000:60000);
+      if(opts.signal) opts.signal.addEventListener("abort",()=>ac.abort(),{once:true});
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:ac.signal,
         headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:quick?c.claudeQuick:c.claudeFull, max_tokens:quick?1500:4000, messages:[{role:"user",content:prompt}]})});
-      const j=await r.json().catch(()=>({}));
+      const j=await r.json().catch(()=>({})); clearTimeout(to);
       if(!r.ok) throw httpErr(r.status, j&&j.error&&j.error.message);
       if(j.stop_reason==="refusal") throw {code:"refused"};
       text=arr(j.content).map(p=>p.text||"").join("");
     } else {
-      const model=String(quick?c.geminiQuick:c.geminiFull).replace(/^models\//,"");
-      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:"POST",signal:opts.signal,
-        headers:{"content-type":"application/json","x-goog-api-key":key},
-        body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}], generationConfig:{responseMimeType:"application/json", temperature:0.4}})});
-      const j=await r.json().catch(()=>({}));
-      if(!r.ok) throw httpErr(r.status, j&&j.error&&j.error.message);
-      const cand=arr(j.candidates)[0];
-      if(!cand){ if(j.promptFeedback&&j.promptFeedback.blockReason) throw {code:"refused"}; throw {code:"upstream_error"}; }
-      text=arr(cand.content&&cand.content.parts).map(p=>p.text||"").join("");
+      // Try the chosen model; if it's overloaded, over its free limit or too slow, fall back to Flash-Lite.
+      const LITE="gemini-flash-lite-latest";
+      const first=String(quick?c.geminiQuick:c.geminiFull).replace(/^models\//,"");
+      const models=first===LITE?[LITE]:[first,LITE];
+      let lastErr=null;
+      for(const model of models){
+        const ac=new AbortController(); const to=setTimeout(()=>ac.abort(), quick?20000:45000);
+        if(opts.signal) opts.signal.addEventListener("abort",()=>ac.abort(),{once:true});
+        let r, j;
+        try{
+          r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:"POST",signal:ac.signal,
+            headers:{"content-type":"application/json","x-goog-api-key":key},
+            body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}], generationConfig:{responseMimeType:"application/json", temperature:0.4}})});
+          j=await r.json().catch(()=>({}));
+        }catch(e){ clearTimeout(to); if(opts.signal&&opts.signal.aborted) throw {code:"cancelled"}; lastErr={code:"upstream_error",message:"The AI service took too long to answer."}; continue; }
+        clearTimeout(to);
+        if(r.status===503 || r.status===429 || r.status===500){ lastErr=httpErr(r.status, j&&j.error&&j.error.message); continue; }
+        if(!r.ok) throw httpErr(r.status, j&&j.error&&j.error.message);
+        const cand=arr(j.candidates)[0];
+        if(!cand){ if(j.promptFeedback&&j.promptFeedback.blockReason) throw {code:"refused"}; lastErr={code:"upstream_error"}; continue; }
+        text=arr(cand.content&&cand.content.parts).map(p=>p.text||"").join("");
+        lastErr=null; break;
+      }
+      if(lastErr) throw lastErr;
     }
   }catch(e){
-    if(e && e.name==="AbortError") throw {code:"cancelled"};
+    if(e && e.name==="AbortError") throw (opts.signal&&opts.signal.aborted)?{code:"cancelled"}:{code:"upstream_error",message:"The AI service took too long to answer."};
     if(e && e.code) throw e;
     throw {code:navigator.onLine?"upstream_error":"offline", message:String(e&&e.message||e)};
   }
   return parseJSONLoose(text);
+}
+async function aiJSON(prompt, opts){
+  try{ return await aiJSONOnce(prompt, opts); }
+  catch(e){ if(e && e.code==="invalid_json") return await aiJSONOnce(prompt, opts); throw e; }
 }
 
 /* ---------- prompts ---------- */
@@ -596,7 +617,7 @@ const SCHEMA = `{
  "tags": ["1-3 short lowercase topic tags"]
 }`;
 function draftPrompt(word, context){
-  return `You are building a personal dictionary entry for an adult English learner in London. Her first language is Chinese; she wants to stop translating and understand English directly.
+  return `You are building a personal dictionary entry for an adult English learner living in the UK. Her first language is Chinese; she wants to stop translating and understand English directly.
 
 Target word or phrase: "${word}"${context?`\nWhere she met it: "${context}"`:""}
 
@@ -630,18 +651,20 @@ function sampleErr(e){
   if(c==="refused") return "The AI declined this one. Try rewording it.";
   return "Something interrupted the AI service. Try again.";
 }
+function slashIPA(x){ x=String(x||"").trim(); if(!x || x==="—") return ""; if(!/^[\/\[]/.test(x)) x="/"+x; if(!/[\/\]]$/.test(x)) x=x+"/"; return x; }
+async function askJSON(prompt, opts){ try{ return await S.sample.json(prompt, opts); }catch(e){ if(e && e.code==="invalid_json") return await S.sample.json(prompt, opts); throw e; } }
 function normaliseDraft(d, word){
   d = d && typeof d==="object" ? d : {};
   const g = d.grammar||{}; const rc=d.recall||{}; const rg=rc.recognise||{};
   return {
-    word: String(d.word||word).trim(), pos:String(d.pos||""), ipa:String(d.ipa||""), ipaUS:String(d.ipaUS||""), pronNote:String(d.pronNote||""),
+    word: String(d.word||word).trim(), pos:String(d.pos||""), ipa:slashIPA(d.ipa), ipaUS:slashIPA(d.ipaUS), pronNote:String(d.pronNote||""),
     meaning:String(d.meaning||""), simulation:String(d.simulation||""),
     examples:arr(d.examples).map(String).filter(Boolean),
     nonExamples:arr(d.nonExamples).map(n=>({text:String(n.text||""),why:String(n.why||"")})).filter(n=>n.text),
     nuance:arr(d.nuance).map(n=>({term:String(n.term||""),diff:String(n.diff||"")})).filter(n=>n.term),
     register:String(d.register||""),
-    family:arr(d.family).map(f=>({form:String(f.form||"—"),pos:String(f.pos||""),ipa:String(f.ipa||""),status:String(f.status||"common"),note:String(f.note||"")})),
-    grammar:{patterns:arr(g.patterns).map(String).filter(Boolean), collocations:arr(g.collocations).map(String).filter(Boolean), inflections:arr(g.inflections).map(i=>({label:String(i.label||""),form:String(i.form||"")})).filter(i=>i.label||i.form)},
+    family:arr(d.family).map(f=>({form:String(f.form||"—"),pos:String(f.pos||""),ipa:slashIPA(f.ipa),status:String(f.status||"common"),note:String(f.note||"")})),
+    grammar:{patterns:arr(g.patterns).map(String).filter(Boolean), collocations:arr(g.collocations).map(String).filter(Boolean), inflections:arr(g.inflections).map(i=>{ if(typeof i==="string"){ const k=i.indexOf(":"); return k>0?{label:i.slice(0,k),form:i.slice(k+1)}:{label:"",form:i}; } return i||{}; }).map(i=>({label:String(i.label||"").trim(),form:String(i.form||"").trim()})).filter(i=>i.label||i.form)},
     frequency:String(d.frequency||""), frequencyNote:String(d.frequencyNote||""), chinese:String(d.chinese||""),
     recall:{ recognise:{question:String(rg.question||""), options:arr(rg.options).map(o=>({text:String(o.text||""),correct:!!o.correct,why:String(o.why||"")})).filter(o=>o.text)},
       contrast:arr(rc.contrast).map(c=>({scenario:String(c.scenario||""),fits:!!c.fits,why:String(c.why||"")})).filter(c=>c.scenario),
@@ -796,7 +819,7 @@ async function fillCore(id){
   let ok=false;
   try{
     const e=S.entries.get(id); if(!e) return;
-    const d=normaliseDraft(await S.sample.json(corePrompt(e.word, e.context||""),{modelTier:"quick", cache:false}), e.word);
+    const d=normaliseDraft(await askJSON(corePrompt(e.word, e.context||""),{modelTier:"quick", cache:false}), e.word);
     const cur=clone(S.entries.get(id)); if(!cur || !cur.id) return;
     ["simulation","examples","nonExamples","chinese","frequency","ipaUS","pos","ipa","meaning"].forEach(k=>{ if(!emptyVal(k,d[k]) && emptyVal(k,cur[k])) cur[k]=d[k]; });
     delete cur.pendingCore; put(cur); ok=true;
@@ -870,14 +893,15 @@ function checkCard(){
     <div class="row"><button class="btn ghost" data-ck="asis">Save “${esc(c.word)}” as typed</button><button class="btn quiet" data-ck="cancel">Cancel</button></div></div>`;
 }
 function corePrompt(word, context){
-  return `Write the first part of a personal dictionary entry for an adult English learner in London (first language Chinese) who wants to understand English directly, without translating.
+  return `Write the first part of a personal dictionary entry for an adult English learner living in the UK (first language Chinese) who wants to understand English directly, without translating.
 Word or phrase: "${word}"${context?`\nWhere she met it: "${context}"`:""}
-- "meaning": 1-2 plain-English sentences, the way a thoughtful friend would explain it; accurate, not dictionary wording.
-- "simulation": a vivid, realistic 2-3 sentence everyday scene in second person that lets her feel the concept, without using the word.
+- "meaning": at most 2 short plain-English sentences, the way a thoughtful friend would explain it; accurate, not dictionary wording, and no example inside it.
+- If "Where she met it" is given, the meaning, scene and every example must use that sense of the word.
+- "simulation": a vivid, realistic 2-3 sentence everyday scene in second person that lets her feel the concept, without using the word. Vary the setting (work, home, friends, news, travel); don't default to London or the Tube.
 - "examples": two natural sentences using the word, in clearly different contexts.
 - "nonExamples": one nearby situation the word does NOT describe, with why.
 - "ipa": British IPA in slashes with ˈ before the stressed syllable; "ipaUS" only if American differs materially, else "".
-- "frequency": everyday | somewhat formal | uncommon. "chinese": a short simplified-Chinese gloss.
+- "frequency": everyday | somewhat formal | uncommon. "chinese": the precise simplified-Chinese equivalent for this sense (check ranks, technical and legal terms carefully).
 - If the word looks misspelt, put the likely intended word in "word".
 British spelling. Reply with only JSON:
 {"word":"","pos":"","ipa":"","ipaUS":"","meaning":"","simulation":"","examples":["",""],"nonExamples":[{"text":"","why":""}],"frequency":"","chinese":""}`;
@@ -889,6 +913,7 @@ Meaning already written: ${e.meaning}
 Scene already written: ${e.simulation||""}
 
 Rules:
+- Stay with the sense in the meaning above throughout. Write every IPA inside slashes.
 - "nuance": 2-4 near-neighbours or confusable ideas and how each differs from this meaning.
 - "register": register and emotional shade in one or two sentences.
 - "family": only genuinely attested noun / adjective / verb / adverb forms, each with British IPA (ˈ before the stressed syllable). status is common, uncommon or rare; for a missing part of speech add a row with form "—", status "none" and a note. Never invent forms.
@@ -949,7 +974,7 @@ async function fillRest(id){
   S.busy.full[id]=true; softRender(true);
   try{
     const e=S.entries.get(id); if(!e) return;
-    const r=normaliseDraft(await S.sample.json(restPrompt(e),{cache:false}), e.word);
+    const r=normaliseDraft(await askJSON(restPrompt(e),{cache:false}), e.word);
     const cur=clone(S.entries.get(id)); if(!cur || !cur.id) return;
     const empty=(k,x)=> x==null || x==="" || (Array.isArray(x)&&!x.length) || (k==="grammar"&&!arr(x.patterns).length&&!arr(x.collocations).length&&!arr(x.inflections).length) || (k==="recall"&&!arr(x.recognise&&x.recognise.options).length&&!arr(x.contrast).length&&!x.produce);
     ["nuance","register","family","grammar","frequencyNote","pronNote","recall","cautions","tags"].forEach(k=>{ if(!empty(k,r[k]) && empty(k,cur[k])) cur[k]=r[k]; });

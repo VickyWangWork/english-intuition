@@ -57,7 +57,7 @@ textarea{width:100%;font:12.5px/1.4 ui-monospace,monospace;background:var(--surf
   <div class="panel stack">
     <div class="row">
       <label>Gemini key<input id="kGemini" type="password" autocomplete="off" placeholder="From aistudio.google.com/apikey"></label>
-      <label>Gemini model<input id="mGemini" value="gemini-flash-latest" autocapitalize="none"></label>
+      <label>Gemini model<input id="mGemini" value="gemini-flash-lite-latest" autocapitalize="none"></label>
     </div>
     <div class="row">
       <label>Claude key (optional, for side-by-side)<input id="kClaude" type="password" autocomplete="off" placeholder="From console.anthropic.com"></label>
@@ -73,14 +73,15 @@ textarea{width:100%;font:12.5px/1.4 ui-monospace,monospace;background:var(--surf
 <script>
 "use strict";
 function corePrompt(word, context){
-  return `Write the first part of a personal dictionary entry for an adult English learner in London (first language Chinese) who wants to understand English directly, without translating.
+  return `Write the first part of a personal dictionary entry for an adult English learner living in the UK (first language Chinese) who wants to understand English directly, without translating.
 Word or phrase: "${word}"${context?`\nWhere she met it: "${context}"`:""}
-- "meaning": 1-2 plain-English sentences, the way a thoughtful friend would explain it; accurate, not dictionary wording.
-- "simulation": a vivid, realistic 2-3 sentence everyday scene in second person that lets her feel the concept, without using the word.
+- "meaning": at most 2 short plain-English sentences, the way a thoughtful friend would explain it; accurate, not dictionary wording, and no example inside it.
+- If "Where she met it" is given, the meaning, scene and every example must use that sense of the word.
+- "simulation": a vivid, realistic 2-3 sentence everyday scene in second person that lets her feel the concept, without using the word. Vary the setting (work, home, friends, news, travel); don't default to London or the Tube.
 - "examples": two natural sentences using the word, in clearly different contexts.
 - "nonExamples": one nearby situation the word does NOT describe, with why.
 - "ipa": British IPA in slashes with ˈ before the stressed syllable; "ipaUS" only if American differs materially, else "".
-- "frequency": everyday | somewhat formal | uncommon. "chinese": a short simplified-Chinese gloss.
+- "frequency": everyday | somewhat formal | uncommon. "chinese": the precise simplified-Chinese equivalent for this sense (check ranks, technical and legal terms carefully).
 - If the word looks misspelt, put the likely intended word in "word".
 British spelling. Reply with only JSON:
 {"word":"","pos":"","ipa":"","ipaUS":"","meaning":"","simulation":"","examples":["",""],"nonExamples":[{"text":"","why":""}],"frequency":"","chinese":""}`;
@@ -92,6 +93,7 @@ Meaning already written: ${e.meaning}
 Scene already written: ${e.simulation||""}
 
 Rules:
+- Stay with the sense in the meaning above throughout. Write every IPA inside slashes.
 - "nuance": 2-4 near-neighbours or confusable ideas and how each differs from this meaning.
 - "register": register and emotional shade in one or two sentences.
 - "family": only genuinely attested noun / adjective / verb / adverb forms, each with British IPA (ˈ before the stressed syllable). status is common, uncommon or rare; for a missing part of speech add a row with form "—", status "none" and a note. Never invent forms.
