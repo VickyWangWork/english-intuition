@@ -323,9 +323,25 @@ async function copyText(text, fallbackEl){
 }
 const ICON_SPEAK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
 const canSpeak = "speechSynthesis" in window && typeof SpeechSynthesisUtterance!=="undefined";
+// Voice choice: devices list novelty and robotic voices (Apple's Rocko, Grandpa, Zarvox…) alongside natural ones,
+// so rank them instead of taking the first British voice.
+const VOICE_BAD=/^(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley|Fred|Junior|Kathy|Ralph)\b/i;
+const VOICE_GOOD=/(Daniel|Serena|Kate|Oliver|Arthur|Martha|Stephanie|Jamie|Libby|Sonia|Ryan|Maisie|Thomas|Google UK English)/i;
+function voiceScore(v){
+  const id=(v.voiceURI||"")+" "+v.name; let s=0;
+  if(/^en[-_]GB/i.test(v.lang)) s+=100; else if(/^en/i.test(v.lang)) s+=20; else return -999;
+  if(VOICE_BAD.test(v.name) || /eloquence|speech\.synthesis\.voice/i.test(id)) s-=300;
+  if(/premium/i.test(id)) s+=40; else if(/enhanced/i.test(id)) s+=30; else if(/natural|neural|online/i.test(id)) s+=25;
+  if(VOICE_GOOD.test(v.name)) s+=15;
+  if(/compact/i.test(id)) s-=5;
+  return s;
+}
+function voiceList(){ try{ return speechSynthesis.getVoices().filter(v=>voiceScore(v)>0).sort((a,b)=>voiceScore(b)-voiceScore(a)); }catch{ return []; } }
+function voicePref(){ try{ return localStorage.getItem("ei.voice")||""; }catch{ return ""; } }
+function pickVoice(){ const all=voiceList(); const want=voicePref(); return (want && all.find(v=>v.voiceURI===want)) || all.find(v=>/^en[-_]GB/i.test(v.lang)) || null; }
 function speak(text){
   try{ const u=new SpeechSynthesisUtterance(text); u.lang="en-GB"; u.rate=.9;
-    const v=speechSynthesis.getVoices().find(v=>/^en[-_]GB/i.test(v.lang)); if(v) u.voice=v;
+    const v=pickVoice(); if(v){ u.voice=v; u.lang=v.lang; }
     speechSynthesis.cancel(); speechSynthesis.speak(u); }catch{ toast("Audio isn't available on this device"); }
 }
 function speakBtn(text){ return canSpeak?`<button class="speak" data-act="speak" data-text="${esc(text)}" aria-label="Play British pronunciation of ${esc(text)}">${ICON_SPEAK}</button>`:""; }
@@ -1630,6 +1646,12 @@ function renderBackup(v){
       <div class="row"><button class="btn" type="submit" id="sySave">Save and sync now</button><span class="small" id="syMsg" role="status" style="flex:1;min-width:0">${syncCfg().lastSync?"Last synced "+esc(rel(syncCfg().lastSync))+" at "+new Date(syncCfg().lastSync).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):""}</span></div>
     </form>
     ${cloudOn()?`</div></details>`:""}
+    <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Pronunciation voice</h2>
+      ${canSpeak?`<label class="f">Voice<select id="voiceSel"><option value="">Automatic (best British voice)</option>${voiceList().map(v=>`<option value="${esc(v.voiceURI)}" ${voicePref()===v.voiceURI?"selected":""}>${esc(v.name)} · ${esc(v.lang)}${/premium/i.test(v.voiceURI)?" · premium":/enhanced/i.test(v.voiceURI)?" · enhanced":""}</option>`).join("")}</select></label>
+      <div class="row"><button class="btn ghost" type="button" id="voiceTest">Play a test word</button><span class="small muted" id="voiceNow" style="flex:1;min-width:0"></span></div>
+      <p class="small muted">For a much more natural voice on iPhone: Settings → Accessibility → Spoken Content (Read &amp; Speak on newer iOS) → Voices → English → pick a UK voice marked Enhanced or Premium (for example Serena or Daniel) and download it. Then come back here and choose it.</p>`
+      :`<p class="small">This browser can't play pronunciation.</p>`}
+    </div>
     <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Install on your iPhone</h2>
       <p class="small">Open this page in Safari, tap Share, then Add to Home Screen. Open it from the new icon: it runs full-screen and works offline.</p>
       <p class="small muted">Shortcuts and links open Safari rather than the Home Screen app, and the two keep separate words, so look words up from the app icon.</p>
@@ -1692,6 +1714,12 @@ function renderBackup(v){
     }catch{ $("#impMsg").textContent="That isn't a valid backup. Export one from this app and try again."; }
   };
   $("#impFile").onchange=ev=>{ const file=ev.target.files[0]; if(!file) return; const rd=new FileReader(); rd.onload=()=>doImport(String(rd.result)); rd.readAsText(file); };
+  { const vs=$("#voiceSel"), vn=$("#voiceNow");
+    const show=()=>{ if(!vn) return; const v=pickVoice(); vn.textContent=v?"Using "+v.name:""; };
+    if(vs){ vs.onchange=()=>{ try{ vs.value?localStorage.setItem("ei.voice",vs.value):localStorage.removeItem("ei.voice"); }catch{} show(); speak("pronunciation"); }; }
+    const vt=$("#voiceTest"); if(vt) vt.onclick=()=>{ speak("pronunciation"); show(); };
+    show();
+    if(vs && !voiceList().length){ try{ speechSynthesis.onvoiceschanged=()=>{ if(route().v==="backup") renderBackup(v); speechSynthesis.onvoiceschanged=null; }; }catch{} } }
   $("#impBtn").onclick=()=>{ const t=$("#impText").value.trim(); if(t) doImport(t); };
 }
 
