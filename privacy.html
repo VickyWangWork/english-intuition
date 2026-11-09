@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>English Intuition · Privacy</title>
+<style>
+@font-face{font-family:'Charis SIL';font-weight:400;src:url(fonts/charis-sil-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Charis SIL';font-weight:700;src:url(fonts/charis-sil-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Instrument Sans';font-weight:400;src:url(fonts/instrument-sans-latin-400-normal.woff2) format('woff2')}
+:root{--bg:#f7f4ee;--ink:#1f1d1a;--muted:#6b665e;--line:#e2ddd3;--accent:#2f5d50}
+@media (prefers-color-scheme:dark){:root{--bg:#171614;--ink:#ece8e1;--muted:#a49e94;--line:#2e2b27;--accent:#8cc3b2}}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 'Instrument Sans',system-ui,sans-serif}
+main{max-width:640px;margin:0 auto;padding:32px 16px 64px}
+h1{font-family:'Charis SIL',Georgia,serif;font-size:28px;margin:0 0 4px}
+h2{font-family:'Charis SIL',Georgia,serif;font-size:19px;margin:28px 0 6px}
+p,li{color:var(--ink)} .muted{color:var(--muted);font-size:14px}
+a{color:var(--accent)} ul{padding-left:20px}
+</style>
+</head>
+<body><main>
+<h1>Privacy</h1>
+<p class="muted">English Intuition · last updated 9 November 2026</p>
+
+<p>English Intuition is a personal vocabulary app made by Vicky Wang and shared with friends. It is free and has no ads or tracking.</p>
+
+<h2>What is stored</h2>
+<ul>
+<li><strong>Your email address</strong>, when you sign in with Google or an email link. It identifies your account and nothing else. With Google, the app receives only your email and basic profile (name and picture); it gets no access to your Gmail, Drive or anything else.</li>
+<li><strong>Your words</strong>: the entries you save, your sentences and your review history, so they sync across your devices.</li>
+<li><strong>A daily count of AI look-ups</strong>, to keep the shared AI within its limit.</li>
+</ul>
+<p>Without signing in, everything stays on your own device.</p>
+
+<h2>Where it goes</h2>
+<ul>
+<li>Account and words are stored with <a href="https://supabase.com/privacy">Supabase</a> (servers in London). Database rules mean only you can read or change your words.</li>
+<li>When you look up a word, the word and its instructions are sent to Google's Gemini service to write the entry. No account details are sent with it.</li>
+<li>Your data is never sold or shared for advertising.</li>
+</ul>
+
+<h2>Deleting your data</h2>
+<p>You can delete any word in the app. To delete your whole account and all your words, email <a href="mailto:tyw0219@gmail.com">tyw0219@gmail.com</a>.</p>
+
+<p><a href="./">Back to the app</a></p>
+</main></body>
+</html>

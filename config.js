@@ -4,5 +4,5 @@
 window.EI_CONFIG = {
   supabaseUrl: "https://wxlvgebofrmjayuzuprp.supabase.co",
   supabaseKey: "sb_publishable_1jk-OyNT3tJX0spkHM8_0w_OFkC8uSR",
-  google: false      // switch to true once Google sign-in is set up in Supabase
+  google: true
 };
