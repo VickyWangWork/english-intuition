@@ -593,7 +593,7 @@ function bindAccount(v){
   const msg=t=>{ const m=$("#acctMsg"); if(m) m.textContent=t; };
   const g=$("#acctGoogle"); if(g) g.onclick=async()=>{ msg("Opening Google…"); try{ const r=await sb.auth.signInWithOAuth({provider:"google", options:{redirectTo:location.origin+location.pathname}}); if(r&&r.error) msg(r.error.message); }catch{ msg("Couldn't start Google sign-in. Try the email code instead."); } };
   const ef=$("#acctEmailForm"); if(ef) ef.onsubmit=async ev=>{ ev.preventDefault(); const email=$("#acctEmail").value.trim(); msg("Sending…");
-    let r; try{ r=await sb.auth.signInWithOtp({email, options:{shouldCreateUser:true}}); }catch{ r={error:{message:"Couldn't reach the sign-in service. Check your connection."}}; }
+    let r; try{ r=await sb.auth.signInWithOtp({email, options:{shouldCreateUser:true, emailRedirectTo:location.origin+location.pathname}}); }catch{ r={error:{message:"Couldn't reach the sign-in service. Check your connection."}}; }
     if(r && r.error){ msg(/rate|limit|seconds/i.test(r.error.message)?"Too many emails just now. Wait a few minutes, then try again.":r.error.message); return; }
     S.otpEmail=email; ef.hidden=true; $("#acctCodeForm").hidden=false; msg(`Email sent to ${email}. Tap the sign-in link on this device, or paste the link (or code) below. It can take a minute; check spam too.`); setTimeout(()=>{ const c=$("#acctCode"); if(c) c.focus(); },50); };
   const back=$("#acctBack"); if(back) back.onclick=()=>{ $("#acctCodeForm").hidden=true; ef.hidden=false; msg(""); };
