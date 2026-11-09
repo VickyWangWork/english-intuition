@@ -35,7 +35,7 @@ You will create two things: a free **Supabase** project (database, sign-in and t
 <p>It expires in an hour. If you didn't ask for it, you can ignore this email.</p>
 ```
 
-Supabase's built-in email only sends a few emails an hour. That's fine for you and a few friends. If more people join, add free SMTP (for example Resend) under **Authentication → Emails → SMTP Settings**.
+If Supabase says templates can only be edited with custom SMTP, skip this: the standard email contains a sign-in **link** instead, and the app accepts that link (tap it, or paste it into the app). Supabase's built-in email only sends a few emails an hour. That's fine for you and a few friends. If more people join, add free SMTP (for example Resend) under **Authentication → Emails → SMTP Settings**.
 
 ## 6. Google sign-in
 1. In Supabase: **Authentication** → **Sign In / Providers** → **Google**. Copy the **Callback URL**.

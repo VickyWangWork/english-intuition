@@ -31,6 +31,7 @@ drop trigger if exists entries_touch on public.entries;
 create trigger entries_touch before insert or update on public.entries
   for each row execute function public.entries_touch();
 create index if not exists entries_user_synced on public.entries (user_id, synced_at);
+grant select, insert, update, delete on public.entries to authenticated;
 
 -- 2. Daily AI look-up counter, so the shared Gemini key isn't used up by one person.
 create table if not exists public.ai_usage (
@@ -43,6 +44,7 @@ alter table public.ai_usage enable row level security;
 drop policy if exists "Read own usage" on public.ai_usage;
 create policy "Read own usage" on public.ai_usage
   for select to authenticated using (auth.uid() = user_id);
+grant select on public.ai_usage to authenticated;
 
 -- Called only by the AI function (with the server key). Returns the new count, or -1 when over the limit.
 create or replace function public.bump_ai_usage(p_user uuid, p_limit int) returns int

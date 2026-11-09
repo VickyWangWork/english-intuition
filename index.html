@@ -451,7 +451,7 @@ function cloud(){
   if(S.cloud) return S.cloud;
   if(window.__cloudMock) return (S.cloud=window.__cloudMock);
   if(!cloudOn()) return null;
-  S.cloud=window.supabase.createClient(CLOUD.supabaseUrl, CLOUD.supabaseKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"pkce", storageKey:"english-intuition.auth"}});
+  S.cloud=window.supabase.createClient(CLOUD.supabaseUrl, CLOUD.supabaseKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"implicit", storageKey:"english-intuition.auth"}});
   return S.cloud;
 }
 function markDirty(id){ if(!S.user) return; S.dirty[id]=1; saveDirty(); cloudSchedule(3000); }
@@ -576,13 +576,13 @@ function accountHTML(){
   const standalone=window.navigator.standalone===true || !!(window.matchMedia && matchMedia("(display-mode: standalone)").matches);
   return `<div class="stack" style="gap:10px"><h2 class="sec" style="margin:0">Account</h2>
      <p class="small">Sign in to keep your words in sync on all your devices and to use AI look-ups without your own key.</p>
-     ${CLOUD.google===false?"":`<button class="btn block" type="button" id="acctGoogle">Continue with Google</button>${standalone?`<p class="note">In the Home Screen app, the email code is more reliable than Google.</p>`:""}`}
+     ${CLOUD.google!==true?"":""}${CLOUD.google===false?"":`<button class="btn block" type="button" id="acctGoogle">Continue with Google</button>${standalone?`<p class="note">In the Home Screen app, the email code is more reliable than Google.</p>`:""}`}
      <form class="stack" id="acctEmailForm" style="gap:8px">
-       <label class="f">${CLOUD.google===false?"Email":"Or sign in with a code by email"}<input type="email" id="acctEmail" name="email" autocomplete="email" placeholder="you@example.com" required></label>
-       <button class="btn ghost" type="submit">Email me a code</button>
+       <label class="f">${CLOUD.google===false?"Sign in by email":"Or sign in by email"}<input type="email" id="acctEmail" name="email" autocomplete="email" placeholder="you@example.com" required></label>
+       <button class="btn ${CLOUD.google===false?"":"ghost"}" type="submit">Email me a sign-in link</button>
      </form>
      <form class="stack" id="acctCodeForm" style="gap:8px" hidden>
-       <label class="f">Code from the email<input type="text" id="acctCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" required></label>
+       <label class="f">Sign-in link or code from the email<span class="hint">In the Home Screen app: in Mail, press and hold the sign-in link, choose Copy Link, then paste it here.</span><input type="text" id="acctCode" autocomplete="one-time-code" autocapitalize="none" spellcheck="false" required></label>
        <div class="row"><button class="btn" type="submit">Sign in</button><button class="btn quiet" type="button" id="acctBack">Use a different email</button></div>
      </form>
      <p class="small" id="acctMsg" role="status"></p>
@@ -595,11 +595,19 @@ function bindAccount(v){
   const ef=$("#acctEmailForm"); if(ef) ef.onsubmit=async ev=>{ ev.preventDefault(); const email=$("#acctEmail").value.trim(); msg("Sending…");
     let r; try{ r=await sb.auth.signInWithOtp({email, options:{shouldCreateUser:true}}); }catch{ r={error:{message:"Couldn't reach the sign-in service. Check your connection."}}; }
     if(r && r.error){ msg(/rate|limit|seconds/i.test(r.error.message)?"Too many emails just now. Wait a few minutes, then try again.":r.error.message); return; }
-    S.otpEmail=email; ef.hidden=true; $("#acctCodeForm").hidden=false; msg(`Code sent to ${email}. It can take a minute; check spam too.`); setTimeout(()=>{ const c=$("#acctCode"); if(c) c.focus(); },50); };
+    S.otpEmail=email; ef.hidden=true; $("#acctCodeForm").hidden=false; msg(`Email sent to ${email}. Tap the sign-in link on this device, or paste the link (or code) below. It can take a minute; check spam too.`); setTimeout(()=>{ const c=$("#acctCode"); if(c) c.focus(); },50); };
   const back=$("#acctBack"); if(back) back.onclick=()=>{ $("#acctCodeForm").hidden=true; ef.hidden=false; msg(""); };
   const cf=$("#acctCodeForm"); if(cf) cf.onsubmit=async ev=>{ ev.preventDefault(); msg("Checking…");
-    let r; try{ r=await sb.auth.verifyOtp({email:S.otpEmail, token:$("#acctCode").value.replace(/\s/g,""), type:"email"}); }catch{ r={error:{}}; }
-    if(r && r.error){ msg("That code didn't work. Check it, or ask for a new one."); return; } msg(""); };
+    const raw=$("#acctCode").value.trim(); let r;
+    try{
+      if(/^https?:\/\//i.test(raw)){
+        const u=new URL(raw); const h=new URLSearchParams(u.hash.replace(/^#/,""));
+        if(h.get("access_token") && h.get("refresh_token")) r=await sb.auth.setSession({access_token:h.get("access_token"), refresh_token:h.get("refresh_token")});
+        else { const tok=u.searchParams.get("token")||u.searchParams.get("token_hash"); const ty=u.searchParams.get("type")||"magiclink";
+          r = tok ? await sb.auth.verifyOtp({token_hash:tok, type:(ty==="signup"?"signup":ty==="invite"?"invite":"magiclink")}) : {error:{message:"no token"}}; }
+      } else r=await sb.auth.verifyOtp({email:S.otpEmail, token:raw.replace(/\s/g,""), type:"email"});
+    }catch{ r={error:{}}; }
+    if(r && r.error){ msg("That didn't work. Each link or code works once and expires in an hour; ask for a new one if needed."); return; } msg(""); };
   const sy=$("#acctSync"); if(sy) sy.onclick=async()=>{ await cloudSync(false); if(route().v==="backup") renderBackup(v); };
   const out=$("#acctOut"); if(out) out.onclick=()=>{ $("#acctOutConfirm").hidden=false; };
   const doOut=async wipe=>{
