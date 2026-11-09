@@ -1,0 +1,1374 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>English Intuition</title>
+<meta name="description" content="Personal English dictionary and recall trainer">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Intuition">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#EDF0EB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1412" media="(prefers-color-scheme: dark)">
+<style>
+@font-face{font-family:'Charis SIL';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/charis-sil-latin-400-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Charis SIL';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/charis-sil-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Charis SIL';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/charis-sil-latin-400-italic.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Charis SIL';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/charis-sil-latin-ext-400-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7,U+02C9-02CB,U+02CE-02CF,U+02D1-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Charis SIL';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/charis-sil-latin-ext-700-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7,U+02C9-02CB,U+02CE-02CF,U+02D1-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Charis SIL';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/charis-sil-latin-ext-400-italic.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7,U+02C9-02CB,U+02CE-02CF,U+02D1-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Instrument Sans';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/instrument-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Instrument Sans';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/instrument-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Instrument Sans';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/instrument-sans-latin-600-normal.woff2) format('woff2')}
+html{padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+/* Layout: a pocket dictionary — one column of ruled index cards, headwords set like a printed entry, tab bar under the thumb. */
+:root{
+  --bg:#EDF0EB; --surface:#FAFBF9; --ink:#17201C; --muted:#5A675F; --line:#D3DAD3;
+  --accent:#1E5A48; --accent-ink:#FFFFFF; --accent-soft:#DCE8E1; --stress:#B0601A;
+  --good:#2C7547; --good-soft:#DCEEE1; --warn:#9A620F; --warn-soft:#F4E7CC; --bad:#AE3737; --bad-soft:#F5DDDA;
+  --f-head:"Charis SIL","Charis","Georgia","Noto Serif",serif;
+  --f-ui:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:12px; --nav-h:62px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F1412; --surface:#17201C; --ink:#E3EAE5; --muted:#93A29A; --line:#2A3530;
+  --accent:#6BC2A3; --accent-ink:#0C1A14; --accent-soft:#1D372E; --stress:#E7A262;
+  --good:#71CB90; --good-soft:#1B3224; --warn:#E2B45E; --warn-soft:#382C16; --bad:#F08B81; --bad-soft:#3B201F;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0F1412; --surface:#17201C; --ink:#E3EAE5; --muted:#93A29A; --line:#2A3530;
+  --accent:#6BC2A3; --accent-ink:#0C1A14; --accent-soft:#1D372E; --stress:#E7A262;
+  --good:#71CB90; --good-soft:#1B3224; --warn:#E2B45E; --warn-soft:#382C16; --bad:#F08B81; --bad-soft:#3B201F;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-ui);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input,textarea,select{font:inherit;color:inherit}
+a{color:var(--accent)}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:10px;padding-block:12px;min-height:56px}
+.brand{font-family:var(--f-head);font-size:19px;font-weight:700;letter-spacing:-.01em;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand small{font-family:var(--f-ui);font-weight:500;font-size:12px;color:var(--muted);margin-left:6px;letter-spacing:.02em}
+.iconbtn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;flex:none}
+.iconbtn svg{width:20px;height:20px}
+main .wrap{padding-block:16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom,0px))}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.label{font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+h2.sec{font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.muted{color:var(--muted)}
+.small{font-size:13.5px}
+p{margin:0}
+.serif{font-family:var(--f-head)}
+.note{font-size:13.5px;color:var(--muted)}
+.banner{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:10px 12px;font-size:14px;color:var(--muted)}
+.banner.warn{background:var(--warn-soft);border-color:transparent;color:var(--ink)}
+
+/* buttons & inputs */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:600;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--accent);border-color:var(--line)}
+.btn.quiet{background:transparent;border-color:transparent;color:var(--muted);padding:0 8px}
+.btn.danger{background:transparent;color:var(--bad);border-color:var(--line)}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:18px;height:18px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=text],input[type=search],textarea,select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;min-height:44px;font-size:16px}
+textarea{resize:vertical;min-height:84px;line-height:1.45}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:600;color:var(--muted)}
+label.f .hint{font-weight:400;font-size:12.5px}
+.chip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 10px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.chip.new{background:var(--accent-soft);color:var(--accent)}
+.chip.due{background:var(--warn-soft);color:var(--warn)}
+.chip.ok{background:var(--good-soft);color:var(--good)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.plain{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.fbtn{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap}
+.fbtn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* library */
+.capture{display:flex;gap:8px}
+.capture input{flex:1;min-width:0}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer;text-decoration:none;color:inherit}
+.item:first-child{border-top:0}
+.item .body{flex:1;min-width:0}
+.item .hw{font-family:var(--f-head);font-size:19px;font-weight:700;line-height:1.25}
+.item .pos{font-family:var(--f-head);font-style:italic;font-weight:400;color:var(--muted);font-size:15px;margin-left:6px}
+.item .ipa{font-family:var(--f-head);color:var(--muted);font-size:14.5px}
+.item .gist{font-size:14.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px}
+.empty{padding:28px 18px;text-align:center;color:var(--muted)}
+
+/* entry */
+.entry-head{display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.entry-head .hw{font-family:var(--f-head);font-size:34px;font-weight:700;line-height:1.1;letter-spacing:-.01em;margin:0;text-wrap:balance;overflow-wrap:anywhere}
+.entry-head .pos{font-family:var(--f-head);font-style:italic;color:var(--muted);font-size:18px}
+.ipa-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--f-head);font-size:19px}
+.ipa-line .tag{font-family:var(--f-ui);font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--muted)}
+.st1{color:var(--stress);font-weight:700}
+.st2{color:var(--muted)}
+.speak{width:36px;height:36px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--accent)}
+.speak svg{width:18px;height:18px}
+.index-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;position:relative}
+.index-card::before{content:"";position:absolute;left:0;right:0;top:40px;height:2px;background:var(--stress);opacity:.55}
+.index-card .label{height:28px;display:flex;align-items:center}
+.index-card .meaning{font-family:var(--f-head);font-size:21px;line-height:1.5;margin-top:14px;text-wrap:pretty}
+.scene{margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);background:var(--surface);position:relative}
+.scene .txt{font-family:var(--f-head);font-style:italic;font-size:17px;line-height:1.55}
+.reveal{border:1px dashed var(--line);border-radius:var(--r);padding:12px 14px;background:transparent;width:100%;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14.5px}
+.reveal b{color:var(--ink);font-weight:600}
+.zh{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--surface);font-size:17px}
+.block{border-top:1px solid var(--line);padding-top:14px}
+.ex{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ex li{display:flex;gap:10px;align-items:flex-start}
+.ex .mk{flex:none;width:22px;height:22px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-top:2px}
+.ex .mk.y{background:var(--good-soft);color:var(--good)}
+.ex .mk.n{background:var(--bad-soft);color:var(--bad)}
+.ex .t{font-family:var(--f-head);font-size:17px;line-height:1.45}
+.ex .why{font-size:14px;color:var(--muted);margin-top:2px}
+.ex .x{min-width:0;flex:1}
+.nu{display:grid;grid-template-columns:minmax(90px,30%) 1fr;gap:8px 14px;margin:0}
+.nu dt{font-family:var(--f-head);font-weight:700;font-size:16.5px}
+.nu dd{margin:0;font-size:15px;min-width:0}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table.fam{border-collapse:collapse;width:100%;font-size:15px}
+table.fam th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 12px;border-bottom:1px solid var(--line)}
+table.fam td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}
+table.fam tr:first-child td{border-top:0}
+table.fam .fm{font-family:var(--f-head);font-weight:700;font-size:16.5px;white-space:nowrap}
+table.fam .ip{font-family:var(--f-head);white-space:nowrap}
+table.fam tr.absent td{color:var(--muted)}
+.gram{display:flex;flex-direction:column;gap:12px}
+.gram ul{margin:4px 0 0;padding-left:18px}
+.gram li{font-family:var(--f-head);font-size:16.5px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14.5px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;min-width:0}
+.sent{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.sent .t{font-family:var(--f-head);font-size:17px}
+.fb{font-size:14.5px;display:flex;flex-direction:column;gap:4px}
+.fb .better{font-family:var(--f-head);font-size:16.5px;background:var(--accent-soft);border-radius:8px;padding:8px 10px}
+.cautions{background:var(--warn-soft);border-radius:var(--r);padding:10px 14px;font-size:14px}
+.cautions ul{margin:4px 0 0;padding-left:18px}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bad-soft);border-radius:10px;padding:10px 12px;font-size:14.5px}
+
+.checkcard{background:var(--surface);border:1px solid var(--accent);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px;font-size:15.5px}
+/* edit */
+details.grp{border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+details.grp>summary{list-style:none;cursor:pointer;padding:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary::after{content:"+";font-size:20px;color:var(--muted);line-height:1}
+details.grp[open]>summary::after{content:"–"}
+details.grp .in{padding:0 14px 14px;display:flex;flex-direction:column;gap:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+.sticky-save{position:sticky;bottom:calc(var(--nav-h) + 10px + env(safe-area-inset-bottom,0px));z-index:3;display:flex;gap:8px;background:var(--bg);padding:8px 0;border-top:1px solid var(--line)}
+.sticky-save .btn{flex:1}
+.thinking{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--muted)}
+.dots{display:inline-flex;gap:4px}
+.dots i{width:6px;height:6px;border-radius:999px;background:var(--accent);animation:b 1.2s infinite ease-in-out}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.7}}
+
+/* practise */
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+.pcard .q{font-family:var(--f-head);font-size:20px;line-height:1.4;text-wrap:pretty}
+.pcard .kind{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.progress{height:4px;border-radius:999px;background:var(--line);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);border-radius:999px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:15.5px;line-height:1.4}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt .why{display:block;font-size:13.5px;color:var(--muted);margin-top:4px}
+.opt:disabled{cursor:default;color:var(--ink)}
+.verdict{border-radius:10px;padding:10px 12px;font-size:15px}
+.verdict.y{background:var(--good-soft)}
+.verdict.n{background:var(--bad-soft)}
+.verdict.m{background:var(--warn-soft)}
+.rate{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.rate button{min-height:58px;border-radius:10px;border:1px solid var(--line);background:var(--bg);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:600;font-size:14.5px}
+.rate button small{font-weight:400;color:var(--muted);font-size:12px}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:2px}
+.stat b{font-size:24px;font-variant-numeric:tabular-nums;font-family:var(--f-head)}
+.stat span{font-size:12.5px;color:var(--muted)}
+.blank{display:inline-block;min-width:4em;border-bottom:2px solid var(--stress);color:transparent}
+
+/* nav */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+nav.tabs .in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--nav-h)}
+nav.tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:var(--muted);font-size:11.5px;font-weight:600;letter-spacing:.02em;position:relative}
+nav.tabs a svg{width:22px;height:22px}
+nav.tabs a[aria-current="page"]{color:var(--accent)}
+nav.tabs a[aria-current="page"]::before{content:"";position:absolute;top:0;left:30%;right:30%;height:2px;background:var(--accent);border-radius:0 0 2px 2px}
+nav.tabs .badge{position:absolute;top:8px;left:calc(50% + 8px);min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--stress);color:#fff;font-size:10.5px;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 14px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14.5px;z-index:20;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.18)}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <button class="iconbtn" id="backBtn" hidden aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <h1 class="brand" id="title">English Intuition</h1>
+  <span id="headRight"></span>
+</div></header>
+
+<main><div class="wrap" id="view"><div class="empty">Opening your dictionary…</div></div></main>
+
+<nav class="tabs" aria-label="Sections"><div class="in">
+  <a href="#words" data-tab="words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 12h5"/></svg>Words</a>
+  <a href="#practise" data-tab="practise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/><path d="M9 12l2 2 4-4"/></svg>Practise<span class="badge" id="dueBadge" hidden></span></a>
+  <a href="#add" data-tab="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Add</a>
+  <a href="#backup" data-tab="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>More</a>
+</div></nav>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- starter entry (from the principles doc, section 5) ---------- */
+const APP_URL = "https://claude.ai/artifact/Bf2sqXwBrqJ4WFKbkd3HRC";
+const AMBIVALENCE = {
+  id:"ambivalence", word:"ambivalence", pos:"noun", ipa:"/æmˈbɪvələns/", ipaUS:"", pronNote:"",
+  meaning:"Part of me wants something; another part of me does not. Both feelings are present at the same time.",
+  simulation:"You receive a job offer abroad. You are excited by the opportunity, but sad about leaving family and friends.",
+  examples:["I feel ambivalence about moving abroad."],
+  nonExamples:[
+    {text:"I haven't decided which country to move to.", why:"That is indecision, not necessarily ambivalence."},
+    {text:"I used to want to move, but now I don't.", why:"That describes a change over time, not two feelings at once."}
+  ],
+  nuance:[
+    {term:"uncertainty", diff:"Not knowing. Ambivalence is feeling two ways at once."},
+    {term:"changing your mind", diff:"One feeling replaces another over time."},
+    {term:"contradiction", diff:"Opposing claims or qualities."},
+    {term:"paradox", diff:"An apparent contradiction that may still be true."}
+  ],
+  register:"Somewhat formal. In conversation, “I have mixed feelings about…” is more common.",
+  family:[
+    {form:"ambivalence", pos:"noun", ipa:"/æmˈbɪvələns/", status:"common", note:""},
+    {form:"ambivalent", pos:"adjective", ipa:"/æmˈbɪvələnt/", status:"common", note:""},
+    {form:"ambivalently", pos:"adverb", ipa:"/æmˈbɪvələntli/", status:"uncommon", note:""},
+    {form:"—", pos:"verb", ipa:"", status:"none", note:"No common corresponding verb."}
+  ],
+  grammar:{
+    patterns:["feel / be ambivalent about + noun or -ing","ambivalent towards someone"],
+    collocations:[],
+    inflections:[{label:"Past tense", form:"Not applicable (noun). Say “felt ambivalent”: the past tense belongs to “feel”."}]
+  },
+  frequency:"", frequencyNote:"",
+  chinese:"矛盾心理；对同一件事既想要又不想要的复杂感受",
+  recall:{
+    recognise:{question:"Which situation shows ambivalence?", options:[
+      {text:"You're excited about a job abroad and sad to leave your friends, both at once.", correct:true, why:"Two opposite feelings at the same time."},
+      {text:"You can't decide between Spain and Portugal.", correct:false, why:"Indecision between options, not mixed feelings."},
+      {text:"You wanted to move, but now you don't.", correct:false, why:"A change of mind over time."},
+      {text:"You don't know whether the offer is real.", correct:false, why:"Uncertainty: not knowing."}
+    ]},
+    contrast:[
+      {scenario:"You love your flat but dread the commute, and you feel both every morning.", fits:true, why:"Two opposing feelings held together."},
+      {scenario:"You haven't decided which country to move to.", fits:false, why:"Indecision, not mixed feelings."},
+      {scenario:"You used to want to move, but now you don't.", fits:false, why:"A change over time."}
+    ],
+    produce:"Name the feeling of wanting to go and wanting to stay at the same time, and use it in a sentence about your own life.",
+    explain:"Explain ambivalence in your own English words."
+  },
+  cautions:[], tags:["feelings"], personal:[], review:{}, source:"principles doc",
+  created:Date.parse("2026-11-08T12:00:00Z"), updated:Date.parse("2026-11-08T12:00:00Z")
+};
+
+/* ---------- helpers ---------- */
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone = o => JSON.parse(JSON.stringify(o||{}));
+const DAY = 86400000;
+const arr = a => Array.isArray(a)?a:[];
+function slug(w){ return String(w||"").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,80); }
+function ipaHTML(s){ return esc(s).replace(/ˈ/g,'<span class="st1" title="primary stress">ˈ</span>').replace(/ˌ/g,'<span class="st2" title="secondary stress">ˌ</span>'); }
+function startOfDay(t){ const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); }
+function rel(t){ if(!t) return ""; const d=Math.round((startOfDay(t)-startOfDay(Date.now()))/DAY); if(d===0) return "today"; if(d===1) return "tomorrow"; if(d===-1) return "yesterday"; return d>0?`in ${d} days`:`${-d} days ago`; }
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function reEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+function lines(s){ return String(s||"").split("\n").map(x=>x.trim()).filter(Boolean); }
+function parts(l){ return l.split("|").map(x=>x.trim()); }
+let toastT;
+function toast(msg){ let t=$(".toast"); if(!t){t=document.createElement("div");t.className="toast";t.setAttribute("role","status");document.body.appendChild(t);} t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>{t.hidden=true;},3200); }
+async function copyText(text, fallbackEl){
+  try{ await navigator.clipboard.writeText(text); toast("Copied"); }
+  catch{ if(fallbackEl){ fallbackEl.focus(); fallbackEl.select(); toast("Select all and copy"); } }
+}
+const ICON_SPEAK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+const canSpeak = "speechSynthesis" in window && typeof SpeechSynthesisUtterance!=="undefined";
+function speak(text){
+  try{ const u=new SpeechSynthesisUtterance(text); u.lang="en-GB"; u.rate=.9;
+    const v=speechSynthesis.getVoices().find(v=>/^en[-_]GB/i.test(v.lang)); if(v) u.voice=v;
+    speechSynthesis.cancel(); speechSynthesis.speak(u); }catch{ toast("Audio isn't available on this device"); }
+}
+function speakBtn(text){ return canSpeak?`<button class="speak" data-act="speak" data-text="${esc(text)}" aria-label="Play British pronunciation of ${esc(text)}">${ICON_SPEAK}</button>`:""; }
+
+/* ---------- state ---------- */
+const S = {
+  mode:"loading", db:null, col:null, sample:null, downloads:null,
+  entries:new Map(), chains:new Map(), netNote:"", syncErr:"",
+  filter:"all", tag:"", q:"",
+  showZh:{}, delConfirm:"", edit:null, editFor:null, autoDraft:"", drafting:null, draftMsg:"",
+  sess:null, busy:{}
+};
+S.samplePromise=Promise.resolve();
+S.dataReady=new Promise(r=>{ S._dataReady=r; });
+async function runLook(word){ await Promise.race([S.dataReady, new Promise(r=>setTimeout(r,4000))]); await S.samplePromise; if(word) capture(word); }
+const LS_KEY="english-intuition.words.v1";
+function lsRead(){ try{ const r=localStorage.getItem(LS_KEY); return r?JSON.parse(r):null; }catch{ return null; } }
+function lsWrite(){ try{ localStorage.setItem(LS_KEY, JSON.stringify([...S.entries.values()])); }catch{} }
+
+/* ---------- storage: IndexedDB on this phone ---------- */
+S.outbox={};
+function pendingCount(){ return 0; }
+function flush(){}
+function overlayOutbox(){}
+let dbp=null;
+function idb(){
+  if(dbp) return dbp;
+  dbp=new Promise((res,rej)=>{ const r=indexedDB.open("english-intuition",1);
+    r.onupgradeneeded=()=>{ r.result.createObjectStore("words",{keyPath:"id"}); };
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+  return dbp;
+}
+async function idbTx(mode, fn){
+  const db=await idb();
+  return new Promise((res,rej)=>{ const tx=db.transaction("words",mode); const req=fn(tx.objectStore("words")); let out;
+    if(req) req.onsuccess=()=>{ out=req.result; };
+    tx.oncomplete=()=>res(out); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error); });
+}
+const idbAll=()=>idbTx("readonly", st=>st.getAll());
+const idbPut=e=>idbTx("readwrite", st=>st.put(e));
+const idbDel=id=>idbTx("readwrite", st=>st.delete(id));
+function saveFail(){ toast("Couldn't save on this phone. Free up some storage and try again."); }
+function put(entry){
+  entry = clone(entry); entry.updated = Date.now();
+  S.entries.set(entry.id, entry); idbPut(entry).catch(saveFail);
+  refreshBadge();
+}
+function removeEntry(id){ S.entries.delete(id); idbDel(id).catch(saveFail); refreshBadge(); }
+window.addEventListener("online", ()=>{ retryLookups(true); softRender(true); });
+window.addEventListener("offline", ()=>softRender(true));
+async function startLocal(){
+  S.mode="local";
+  let all=[]; try{ all=(await idbAll())||[]; }catch{ toast("This browser blocked storage, so words can't be kept."); }
+  if(!all.length){
+    let seeded=false; try{ seeded=localStorage.getItem("english-intuition.seeded")==="1"; }catch{}
+    if(!seeded){ all=[clone(AMBIVALENCE)]; idbPut(all[0]).catch(()=>{}); try{ localStorage.setItem("english-intuition.seeded","1"); }catch{} }
+  }
+  all.forEach(e=>{ if(e&&e.id) S.entries.set(e.id,e); });
+  S.loaded=true; S._dataReady(); render();
+}
+async function init(){
+  loadPack(); S.cfg=loadCfg(); S.sample=makeAI(); S.downloads=null;
+  try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch{}
+  await startLocal();
+  retryLookups(false);
+}
+
+/* ---------- review logic ---------- */
+function isDue(e){ const r=e.review||{}; return !e.captured && (!r.next || r.next<=Date.now()); }
+function isNew(e){ return !(e.review&&e.review.last); }
+function statusChip(e){
+  if(e.captured) return S.busy.draft&&S.busy.draft[e.id] ? '<span class="chip new">Saving…</span>' : '<span class="chip plain">Not built</span>';
+  const r=e.review||{};
+  if(!r.last) return '<span class="chip new">New</span>';
+  if(isDue(e)) return '<span class="chip due">Due</span>';
+  if((r.confidence??2)<=0) return '<span class="chip bad">Shaky</span>';
+  return `<span class="chip ok">${esc(rel(r.next))}</span>`;
+}
+function priority(e){ const r=e.review||{}; return (arr(r.missed).length*2 + (r.lapses||0)*3 + (r.last?0:1) + (3-(r.confidence??2))); }
+function dueList(){ return [...S.entries.values()].filter(isDue).sort((a,b)=>priority(b)-priority(a) || (a.review?.next||0)-(b.review?.next||0)); }
+function schedule(e, rating, missedNotes){
+  const r = Object.assign({interval:0, lapses:0, history:[], missed:[]}, e.review||{});
+  const prev = r.interval||0; let iv;
+  if(rating===0){ iv=0; r.lapses=(r.lapses||0)+1; }
+  else if(rating===1) iv = Math.max(1, Math.round(prev*1.2));
+  else if(rating===2) iv = prev ? Math.max(2, Math.round(prev*2.2)) : 1;
+  else iv = prev ? Math.max(4, Math.round(prev*3)) : 3;
+  r.interval=iv; r.last=Date.now(); r.confidence=rating;
+  r.next = rating===0 ? Date.now() : startOfDay(Date.now())+iv*DAY;
+  r.history = arr(r.history).concat([{at:Date.now(), r:rating}]).slice(-30);
+  if(missedNotes && missedNotes.length) r.missed = arr(r.missed).concat(missedNotes).slice(-10);
+  else if(rating>=2 && arr(r.missed).length) r.missed = arr(r.missed).slice(1); // a clean round retires the oldest miss
+  e.review = r; return e;
+}
+function refreshBadge(){ const n=dueList().length; const b=$("#dueBadge"); if(!b) return; b.hidden=!n; b.textContent=n>99?"99+":String(n); }
+
+/* ---------- word forms ---------- */
+function forms(e){
+  const out=new Set([e.word]);
+  arr(e.family).forEach(f=>{ if(f.form && f.status!=="none" && f.form!=="—") out.add(f.form); });
+  arr(e.grammar&&e.grammar.inflections).forEach(i=>String(i.form||"").split(/[,/;]/).forEach(x=>{ x=x.replace(/\(.*?\)/g,"").trim(); if(x && x.split(" ").length<=3 && /^[a-z' -]+$/i.test(x)) out.add(x); }));
+  return [...out].filter(Boolean).sort((a,b)=>b.length-a.length);
+}
+function formRegex(e){ return new RegExp("\\b("+forms(e).map(reEsc).join("|")+")\\b","i"); }
+function mask(text, e){ return esc(text).replace(new RegExp("\\b("+forms(e).map(f=>reEsc(esc(f))).join("|")+")\\b","gi"),'<span class="blank">____</span>'); }
+function norm(s){ return String(s||"").toLowerCase().replace(/[’']/g,"'").replace(/[^a-z' -]/g,"").replace(/\s+/g," ").trim(); }
+
+/* ---------- AI service, called with your own key ---------- */
+const DEFAULT_CFG={provider:"gemini", keys:{gemini:"",claude:""}, geminiQuick:"gemini-flash-latest", geminiFull:"gemini-flash-latest", claudeQuick:"claude-haiku-5-5", claudeFull:"claude-haiku-5-5"};
+const CFG_KEY="english-intuition.ai.v1";
+function loadCfg(){
+  let c={}; try{ c=JSON.parse(localStorage.getItem(CFG_KEY)||"{}")||{}; }catch{}
+  const out=Object.assign(clone(DEFAULT_CFG), c); out.keys=Object.assign({gemini:"",claude:""}, c.keys||{}); return out;
+}
+function saveCfg(){ try{ localStorage.setItem(CFG_KEY, JSON.stringify(S.cfg)); }catch{ toast("Couldn't save settings on this phone."); } }
+function makeAI(){ const c=S.cfg; if(!c || !c.keys[c.provider]) return null; return { json:(prompt,opts)=>aiJSON(prompt,opts||{}) }; }
+function httpErr(status, msg){
+  const m=String(msg||"").slice(0,160);
+  if(status===401||status===403) return {code:"bad_key",message:m};
+  if(status===429) return {code:"rate_limited",message:m};
+  if(status===400||status===404) return {code:/api key/i.test(m)?"bad_key":"bad_request",message:m};
+  return {code:"upstream_error",message:m};
+}
+function parseJSONLoose(t){
+  t=String(t||"").trim(); if(!t) throw {code:"invalid_json"};
+  try{ return JSON.parse(t); }catch{}
+  const m=t.match(/```(?:json)?\s*([\s\S]*?)```/); if(m){ try{ return JSON.parse(m[1]); }catch{} }
+  const a=t.search(/[\[{]/), b=Math.max(t.lastIndexOf("}"), t.lastIndexOf("]"));
+  if(a>=0 && b>a){ try{ return JSON.parse(t.slice(a,b+1)); }catch{} }
+  throw {code:"invalid_json"};
+}
+async function aiJSON(prompt, opts){
+  const c=S.cfg, quick=opts.modelTier==="quick", key=c.keys[c.provider];
+  if(!navigator.onLine) throw {code:"offline"};
+  let text="";
+  try{
+    if(c.provider==="claude"){
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:opts.signal,
+        headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:quick?c.claudeQuick:c.claudeFull, max_tokens:quick?1500:4000, messages:[{role:"user",content:prompt}]})});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok) throw httpErr(r.status, j&&j.error&&j.error.message);
+      if(j.stop_reason==="refusal") throw {code:"refused"};
+      text=arr(j.content).map(p=>p.text||"").join("");
+    } else {
+      const model=String(quick?c.geminiQuick:c.geminiFull).replace(/^models\//,"");
+      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:"POST",signal:opts.signal,
+        headers:{"content-type":"application/json","x-goog-api-key":key},
+        body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}], generationConfig:{responseMimeType:"application/json", temperature:0.4}})});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok) throw httpErr(r.status, j&&j.error&&j.error.message);
+      const cand=arr(j.candidates)[0];
+      if(!cand){ if(j.promptFeedback&&j.promptFeedback.blockReason) throw {code:"refused"}; throw {code:"upstream_error"}; }
+      text=arr(cand.content&&cand.content.parts).map(p=>p.text||"").join("");
+    }
+  }catch(e){
+    if(e && e.name==="AbortError") throw {code:"cancelled"};
+    if(e && e.code) throw e;
+    throw {code:navigator.onLine?"upstream_error":"offline", message:String(e&&e.message||e)};
+  }
+  return parseJSONLoose(text);
+}
+
+/* ---------- prompts ---------- */
+const SCHEMA = `{
+ "word": "the headword as normally written",
+ "pos": "noun | verb | adjective | adverb | phrase | ...",
+ "ipa": "/British IPA with ˈ primary stress/",
+ "ipaUS": "American IPA only if materially different, else empty string",
+ "pronNote": "short note on a British–American difference or tricky sound, else empty string",
+ "meaning": "1-2 plain-English sentences",
+ "simulation": "2-3 sentence vivid scene in second person, without the target word",
+ "examples": ["natural sentence using the word", "another, in a clearly different context"],
+ "nonExamples": [{"text": "a plausible near-miss situation", "why": "why the word does not fit"}],
+ "nuance": [{"term": "near-neighbour", "diff": "how it differs"}],
+ "register": "register and emotional shade in one or two sentences",
+ "family": [{"form": "word form or —", "pos": "noun", "ipa": "/…/", "status": "common | uncommon | rare | none", "note": ""}],
+ "grammar": {"patterns": ["typical construction"], "collocations": ["common collocation"], "inflections": [{"label": "plural / past tense / comparative …", "form": "form, or a note"}]},
+ "frequency": "everyday | somewhat formal | uncommon",
+ "frequencyNote": "short caution that this is approximate",
+ "chinese": "brief simplified-Chinese gloss",
+ "recall": {
+   "recognise": {"question": "Which situation shows <word>?", "options": [{"text": "", "correct": true, "why": ""}, {"text": "", "correct": false, "why": ""}, {"text": "", "correct": false, "why": ""}, {"text": "", "correct": false, "why": ""}]},
+   "contrast": [{"scenario": "situation without the word", "fits": true, "why": ""}, {"scenario": "", "fits": false, "why": ""}, {"scenario": "", "fits": false, "why": ""}],
+   "produce": "a prompt asking the learner to name or use the word for a described situation, without revealing the word",
+   "explain": "Explain <word> in your own English words."
+ },
+ "cautions": ["anything uncertain or approximate"],
+ "tags": ["1-3 short lowercase topic tags"]
+}`;
+function draftPrompt(word, context){
+  return `You are building a personal dictionary entry for an adult English learner in London. Her first language is Chinese; she wants to stop translating and understand English directly.
+
+Target word or phrase: "${word}"${context?`\nWhere she met it: "${context}"`:""}
+
+Rules:
+- English first. "meaning" is an intuitive plain-English paraphrase a thoughtful friend would give, not dictionary wording, and it stays accurate. Example of the style: "Part of me wants it; another part doesn't."
+- "simulation": a vivid, realistic everyday scene that lets her feel the concept. Do not use the target word in it.
+- At least two natural "examples" in clearly different contexts, each using the word or one of its forms.
+- At least one "nonExamples" item: a nearby situation the word does NOT describe, and why. Explain the boundary.
+- "nuance": 2-4 near-neighbours or confusable ideas and how each differs.
+- "family": only genuinely attested noun / adjective / verb / adverb forms, each with British IPA. Mark uncommon or rare forms. For a missing part of speech add a row with form "—", status "none" and a note. Never invent forms.
+- "grammar.inflections": past tense and past participle ONLY if the headword is a verb (or name the auxiliary verb clearly, e.g. felt ambivalent). Give plural or say "uncountable" for nouns; comparatives for gradable adjectives.
+- IPA is British (standard Southern British) by default, inside slashes, with ˈ before the primary-stressed syllable.
+- "frequency" is qualitative; say in frequencyNote that it is approximate.
+- "chinese" is a short optional fallback gloss.
+- "recall.recognise": exactly one correct option; distractors are the near-neighbours. Shuffle the order.
+- "recall.contrast": three scenarios that do not contain the word, at least one that fits and one that does not.
+- If the word looks misspelt, use the likely intended word and say so in "cautions".
+- British spelling throughout.
+
+Reply with only JSON in exactly this shape:
+${SCHEMA}`;
+}
+function sampleErr(e){
+  const c=e&&e.code;
+  if(c==="cancelled") return "";
+  if(!navigator.onLine || c==="offline") return "You're offline. This needs an internet connection.";
+  if(c==="bad_key") return "Your AI key was rejected. Check it in More → AI settings.";
+  if(c==="bad_request") return "The AI service rejected the request"+(e.message?` (${e.message})`:"")+". Check the model names in More → AI settings.";
+  if(c==="rate_limited") return "The AI service's free limit is used up for now. Try again later.";
+  if(c==="invalid_json") return "The AI's answer came back in the wrong shape. Try again.";
+  if(c==="refused") return "The AI declined this one. Try rewording it.";
+  return "Something interrupted the AI service. Try again.";
+}
+function normaliseDraft(d, word){
+  d = d && typeof d==="object" ? d : {};
+  const g = d.grammar||{}; const rc=d.recall||{}; const rg=rc.recognise||{};
+  return {
+    word: String(d.word||word).trim(), pos:String(d.pos||""), ipa:String(d.ipa||""), ipaUS:String(d.ipaUS||""), pronNote:String(d.pronNote||""),
+    meaning:String(d.meaning||""), simulation:String(d.simulation||""),
+    examples:arr(d.examples).map(String).filter(Boolean),
+    nonExamples:arr(d.nonExamples).map(n=>({text:String(n.text||""),why:String(n.why||"")})).filter(n=>n.text),
+    nuance:arr(d.nuance).map(n=>({term:String(n.term||""),diff:String(n.diff||"")})).filter(n=>n.term),
+    register:String(d.register||""),
+    family:arr(d.family).map(f=>({form:String(f.form||"—"),pos:String(f.pos||""),ipa:String(f.ipa||""),status:String(f.status||"common"),note:String(f.note||"")})),
+    grammar:{patterns:arr(g.patterns).map(String).filter(Boolean), collocations:arr(g.collocations).map(String).filter(Boolean), inflections:arr(g.inflections).map(i=>({label:String(i.label||""),form:String(i.form||"")})).filter(i=>i.label||i.form)},
+    frequency:String(d.frequency||""), frequencyNote:String(d.frequencyNote||""), chinese:String(d.chinese||""),
+    recall:{ recognise:{question:String(rg.question||""), options:arr(rg.options).map(o=>({text:String(o.text||""),correct:!!o.correct,why:String(o.why||"")})).filter(o=>o.text)},
+      contrast:arr(rc.contrast).map(c=>({scenario:String(c.scenario||""),fits:!!c.fits,why:String(c.why||"")})).filter(c=>c.scenario),
+      produce:String(rc.produce||""), explain:String(rc.explain||"") },
+    cautions:arr(d.cautions).map(String).filter(Boolean), tags:arr(d.tags).map(t=>String(t).toLowerCase()).filter(Boolean).slice(0,5)
+  };
+}
+async function askFeedback(e, sentence, task){
+  const prompt = `An adult English learner (first language Chinese) is practising the English ${e.pos?e.pos+" ":""}"${e.word}", which means: ${e.meaning}
+${task?`She was asked: "${task}"\n`:""}She wrote:
+"${sentence}"
+
+Give brief, specific, kind feedback in plain English on (1) naturalness, (2) grammar, and (3) whether "${e.word}" is used with the right meaning and nuance. Do not invent or assume any personal details beyond what she wrote. If the sentence could be more natural, give ONE improved version that keeps her meaning and her details; otherwise use an empty string. British English.
+Reply with only JSON: {"verdict":"natural" or "almost" or "needs work","naturalness":"one sentence","grammar":"one sentence","nuance":"one sentence","better":"improved sentence or empty string"}`;
+  return S.sample.json(prompt,{cache:false});
+}
+async function askExplain(e, text){
+  const prompt = `An English learner is explaining "${e.word}" in her own English words, without translating.
+Reference meaning: ${e.meaning}
+Nearby ideas it should not be confused with: ${arr(e.nuance).map(n=>n.term+" ("+n.diff+")").join("; ")||"none listed"}
+Her explanation: "${text}"
+
+Meaning matters more than dictionary wording: an accurate paraphrase in different words is correct. Reply with only JSON: {"verdict":"got it" or "partly" or "not yet","feedback":"1-2 short sentences","missed":"the distinction she missed, or empty string"}`;
+  return S.sample.json(prompt,{cache:false});
+}
+
+/* ---------- routing ---------- */
+function route(){
+  const h=decodeURIComponent(location.hash.slice(1));
+  if(h.startsWith("w-")) return {v:"word", id:h.slice(2)};
+  if(h.startsWith("edit-")) return {v:"edit", id:h.slice(5)};
+  if(h.startsWith("look-")) return {v:"look", word:h.slice(5).replace(/-+/g," ").trim()};
+  if(h==="lookup") return {v:"lookup"};
+  if(["practise","add","backup","words"].includes(h)) return {v:h};
+  return {v:"words"};
+}
+function go(h){ if(location.hash==="#"+h) render(); else location.hash=h; }
+window.addEventListener("hashchange", ()=>{ S.delConfirm=""; render(); window.scrollTo(0,0); });
+function softRender(force){
+  const r=route(); const a=document.activeElement;
+  const typing = a && (a.tagName==="TEXTAREA" || (a.tagName==="INPUT" && a.type!=="button"));
+  if(!S.rendered || S.waiting){ render(); return; }
+  if(r.v==="edit"||r.v==="add"||r.v==="practise"&&S.sess) return;
+  if(typing && !force) return;
+  if(typing && a.id) { const id=a.id, val=a.value, pos=a.selectionStart; render(); const n=document.getElementById(id); if(n){ n.value=val; n.focus(); try{n.setSelectionRange(pos,pos);}catch{} } return; }
+  render();
+}
+
+/* ---------- render ---------- */
+function setHead(title, back, right){
+  $("#title").innerHTML = title;
+  $("#backBtn").hidden = !back;
+  $("#backBtn").dataset.to = back||"";
+  $("#headRight").innerHTML = right||"";
+}
+function render(){
+  const r=route(); const v=$("#view");
+  document.querySelectorAll("nav.tabs a").forEach(a=>{ const t=a.dataset.tab; const on = t===r.v || (t==="words" && (r.v==="word")) || (t==="add" && r.v==="edit"); if(on) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+  refreshBadge();
+  if(S.mode==="loading"){ setHead("English Intuition"); v.innerHTML='<div class="empty">Opening your dictionary…</div>'; return; }
+  S.waiting = S.mode==="db" && !S.loaded;
+  S.rendered = !S.waiting;
+  if(r.v==="look"||r.v==="lookup"){ location.replace("#words"); if(r.word){ if(S.lastLook!==r.word){ S.lastLook=r.word; setTimeout(()=>{ S.lastLook=""; },3000); runLook(r.word); } } else S.focusCapture=true; return; }
+  if(r.v==="word") return renderWord(v, r.id);
+  if(r.v==="edit") return renderEdit(v, r.id);
+  if(r.v==="add") return renderEdit(v, null);
+  if(r.v==="practise") return renderPractise(v);
+  if(r.v==="backup") return renderBackup(v);
+  return renderWords(v);
+}
+function notes(){
+  let h="";
+  const n=pendingCount();
+  if(!navigator.onLine) h+=`<div class="banner">You're offline. You can study and practise; new words are looked up when you're back online.</div>`;
+  else if(S.syncErr) h+=`<div class="banner warn">${esc(S.syncErr)}</div>`;
+  else if(S.netNote) h+=`<div class="banner warn">${esc(S.netNote)}</div>`;
+  else if(S.mode==="db" && Object.values(S.outbox).some(j=>Date.now()-j.at>5000)) h+=`<div class="banner">${n} change${n===1?"":"s"} waiting to sync. They're safe on this phone.</div>`;
+  return h;
+}
+
+/* --- Words (library) --- */
+function renderWords(v){
+  const all=[...S.entries.values()];
+  setHead(`English Intuition<small>${all.length} word${all.length===1?"":"s"}</small>`);
+  const tags=[...new Set(all.flatMap(e=>arr(e.tags)))].sort();
+  const q=S.q.trim().toLowerCase();
+  let list=all.filter(e=>{
+    if(S.filter==="due" && !isDue(e)) return false;
+    if(S.filter==="shaky" && !((e.review&&e.review.last&&(e.review.confidence??2)<=1) || arr(e.review&&e.review.missed).length)) return false;
+    if(S.filter==="captured" && !e.captured) return false;
+    if(S.tag && !arr(e.tags).includes(S.tag)) return false;
+    if(q){ const hay=[e.word,e.meaning,...arr(e.tags),...arr(e.family).map(f=>f.form)].join(" ").toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  }).sort((a,b)=> (b.created||0)-(a.created||0));
+  const nCap = all.filter(e=>e.captured).length;
+  const qRaw=S.q.trim(); const exact = qRaw && S.entries.has(slug(qRaw));
+  const addRow = qRaw && !exact && slug(qRaw) ? `<button class="item" data-act="addq" data-w="${esc(qRaw)}" style="width:100%;border-left:0;border-right:0;border-bottom:0;background:transparent;text-align:left;font:inherit;color:inherit"><div class="body"><div class="hw" style="color:var(--accent)">+ ${esc(qRaw)}</div><div class="gist">${packGet(qRaw)?esc(packGet(qRaw)[2])+" Tap to save it.":"Not in your dictionary yet. Tap or press Enter to look it up and save it."}</div></div></button>` : "";
+  const f=(k,l)=>`<button class="fbtn" data-act="filter" data-k="${k}" aria-pressed="${S.filter===k}">${l}</button>`;
+  v.innerHTML = `<div class="stack">
+    ${notes()}
+    <form class="capture" id="capForm" autocomplete="off">
+      <input type="text" id="capIn" placeholder="New word: look up and save…" aria-label="Look up and save a new word" enterkeyhint="go" autocapitalize="none">
+      <button class="btn ghost" type="button" id="pasteBtn">Paste</button>
+      <button class="btn" type="submit">Add</button>
+    </form>
+    ${checkCard()}
+    <input type="search" id="searchIn" placeholder="Search your words" value="${esc(S.q)}" aria-label="Search your words">
+    <div class="filters">${f("all","All")}${f("due","Due")}${f("shaky","Shaky")}${nCap?f("captured",`Not built (${nCap})`):""}
+      ${tags.map(t=>`<button class="fbtn" data-act="tag" data-t="${esc(t)}" aria-pressed="${S.tag===t}">#${esc(t)}</button>`).join("")}</div>
+    ${list.length?`<div class="list">${list.map(e=>`
+      <a class="item" href="#w-${esc(e.id)}">
+        <div class="body">
+          <div><span class="hw">${esc(e.word)}</span>${e.pos?`<span class="pos">${esc(e.pos)}</span>`:""}</div>
+          ${e.ipa?`<div class="ipa">${ipaHTML(e.ipa)}</div>`:""}
+          <div class="gist">${esc(e.captured?(S.busy.draft&&S.busy.draft[e.id]?"The AI is writing this entry…":"Entry not built yet. Tap to finish it."):(e.meaning||""))}</div>
+        </div>${statusChip(e)}
+      </a>`).join("")}${addRow}</div>`
+      : `<div class="list">${addRow||`<div class="empty">${all.length?"No words match. Try another search or filter.":"Your dictionary is empty. Type your first word above."}</div>`}</div>`}
+    <p class="note">Saved on this phone. Use More → Export to back up or move your words.</p>
+  </div>`;
+  if(S.focusCapture){ S.focusCapture=false; setTimeout(()=>{ try{ $("#capIn").focus(); }catch{} },120); }
+  const pb=$("#pasteBtn"); if(pb) pb.onclick=async()=>{
+    try{ const t=String(await navigator.clipboard.readText()||"").trim(); if(!t){ toast("The clipboard is empty"); return; }
+      const w=t.split(/\s+/).slice(0,6).join(" "); $("#capIn").value=w; capture(w); }
+    catch{ toast("Couldn't read the clipboard. Long-press the box and paste instead."); }
+  };
+  $("#capForm").onsubmit = ev=>{ ev.preventDefault(); capture($("#capIn").value); };
+  $("#searchIn").onkeydown = ev=>{ if(ev.key!=="Enter") return; ev.preventDefault(); const t=ev.target.value.trim(); if(!t) return; S.q=""; if(S.entries.has(slug(t))) go("w-"+slug(t)); else capture(t); };
+  $("#searchIn").oninput = ev=>{ S.q=ev.target.value; const pos=ev.target.selectionStart; renderWords(v); const n=$("#searchIn"); n.focus(); try{n.setSelectionRange(pos,pos);}catch{} };
+}
+function lev(a,b){
+  const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+  let prev=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){ const cur=[i]; for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); prev=cur; }
+  return prev[n];
+}
+function findForm(word){ const n=norm(word); for(const e of S.entries.values()){ if(e.captured) continue; if(forms(e).some(f=>norm(f)===n)) return e; } return null; }
+function nearWords(word){ const n=norm(word); if(n.length<4) return []; return [...S.entries.values()].filter(e=>!e.captured).map(e=>({e,d:lev(n,norm(e.word))})).filter(x=>x.d>0&&x.d<=2).sort((a,b)=>a.d-b.d).slice(0,3).map(x=>x.e); }
+S.pack=null;
+async function loadPack(){ try{ const r=await fetch("pack.json"); if(r.ok){ const j=await r.json(); S.pack=(j&&j.words)||null; } }catch{} }
+function packGet(word){ if(!S.pack) return null; const k=String(word||"").trim().toLowerCase(); return Object.prototype.hasOwnProperty.call(S.pack,k)?S.pack[k]:null; }
+function packNear(word){
+  if(!S.pack) return []; const n=String(word||"").trim().toLowerCase(); if(n.length<4) return [];
+  const out=[]; for(const w in S.pack){ if(Math.abs(w.length-n.length)>2) continue; const d=lev(n,w); if(d>0&&d<=2) out.push([d,w]); }
+  return out.sort((a,b)=>a[0]-b[0]).slice(0,5).map(x=>[x[1],S.pack[x[1]]]);
+}
+function emptyVal(k,x){ return x==null || x==="" || (Array.isArray(x)&&!x.length) || (k==="recall"&&!arr(x.recognise&&x.recognise.options).length&&!arr(x.contrast).length&&!x.produce) || (k==="grammar"&&!arr(x.patterns).length&&!arr(x.collocations).length&&!arr(x.inflections).length); }
+async function fillCore(id){
+  S.busy.core=S.busy.core||{}; S.busy.full=S.busy.full||{};
+  if(S.busy.core[id] || !S.sample) return;
+  S.busy.core[id]=true; softRender(true);
+  let ok=false;
+  try{
+    const e=S.entries.get(id); if(!e) return;
+    const d=normaliseDraft(await S.sample.json(corePrompt(e.word, e.context||""),{modelTier:"quick", cache:false}), e.word);
+    const cur=clone(S.entries.get(id)); if(!cur || !cur.id) return;
+    ["simulation","examples","nonExamples","chinese","frequency","ipaUS","pos","ipa","meaning"].forEach(k=>{ if(!emptyVal(k,d[k]) && emptyVal(k,cur[k])) cur[k]=d[k]; });
+    delete cur.pendingCore; put(cur); ok=true;
+  }catch(err){ sampleErr(err); }
+  finally{ delete S.busy.core[id]; softRender(true); }
+  if(ok) fillRest(id);
+}
+function checkPrompt(word){
+  return `Is "${word}" a correctly spelt English word or established phrase (British or American spelling)? An English learner typed it on a phone, so expect typos and spellings based on sound.
+If it is correct (ignore capitalisation), reply {"valid":true,"suggestions":[]}.
+If it is not, reply {"valid":false,"suggestions":[{"word":"...","hint":"..."}]} with up to 5 real English words or phrases she most likely meant, most likely first. Each "hint" is a plain-English clue to the meaning in under 8 words, so she can recognise the word without translating. British spelling.
+Reply with only JSON.`;
+}
+async function capture(raw, context, opts){
+  opts=opts||{};
+  const word=String(raw||"").trim(); if(!word) return;
+  const id=slug(word); if(!id){ toast("Type a word in English letters."); return; }
+  if(S.entries.has(id)){ S.check=null; toast(`“${word}” is already in your dictionary`); go("w-"+id); return; }
+  if(!opts.skipForm){ const fam=findForm(word); if(fam){ S.check={word, context, status:"form", entry:fam.id}; render(); return; } }
+  if(packGet(word)) opts.skipSpell=true; // a known word: no need to check spelling
+  else if(!opts.skipSpell && (!navigator.onLine || !S.sample)){
+    const near=packNear(word);
+    if(near.length){ S.check={word, context, status:"suggest", offline:true, suggestions:near.map(x=>({word:x[0], hint:x[1][2]})), near:nearWords(word).map(e=>e.id)}; render(); return; }
+  }
+  if(!navigator.onLine){ S.check=null; saveNew(word, id, context); return; }
+  let pre=null;
+  if(S.sample && !opts.skipSpell){
+    const token={}; S.check={word, context, status:"checking", token}; render();
+    pre=startCore(word, context);
+    let res=null;
+    try{ res=await S.sample.json(checkPrompt(word),{modelTier:"quick"}); }catch(err){ sampleErr(err); }
+    if(!S.check || S.check.token!==token){ pre.ctl.abort(); return; }
+    if(res && res.valid===false){
+      pre.ctl.abort();
+      const seen=new Set();
+      const sug=arr(res.suggestions).map(s=>({word:String(s&&s.word||"").trim(), hint:String(s&&s.hint||"").trim()})).filter(s=>{ const k=slug(s.word); if(!k||seen.has(k)||k===id) return false; seen.add(k); return true; }).slice(0,5);
+      const near=nearWords(word).filter(e=>!seen.has(e.id)).map(e=>e.id);
+      S.check={word, context, status:"suggest", suggestions:sug, near}; render(); return;
+    }
+  }
+  S.check=null; saveNew(word, id, context, pre);
+}
+function saveNew(word, id, context, pre){
+  if(S.entries.has(id)){ if(pre) pre.ctl.abort(); toast(`“${word}” is already in your dictionary`); go("w-"+id); return; }
+  if(route().v==="add"){ S.editFor=null; S.edit=null; }
+  const pk=packGet(word);
+  if(pk){
+    if(pre) pre.ctl.abort();
+    const base=normaliseDraft({word, pos:pk[0], ipa:pk[1], meaning:pk[2]}, word);
+    put(Object.assign({id, created:Date.now(), personal:[], review:{}, context:context||"", partial:true, pendingCore:true, fromPack:true}, base));
+    const live=!!(S.sample && navigator.onLine);
+    go("w-"+id); toast(`Saved “${word}” from the offline pack.${live?" Adding examples…":""}`);
+    if(live) fillCore(id);
+    return;
+  }
+  const offline=!navigator.onLine;
+  put({id, word, context:context||"", captured:true, pendingLookup:true, created:Date.now(), personal:[], review:{}, tags:[]});
+  if(offline){ if(pre) pre.ctl.abort(); toast(`Saved “${word}”. It will be looked up when you're back online.`); go("w-"+id); }
+  else if(S.sample){ go("w-"+id); backgroundDraft(id, word, context||"", pre); } else { if(pre) pre.ctl.abort(); toast(`Saved “${word}”. Add a free AI key in More to fill entries in automatically.`); go("w-"+id); }
+}
+function checkCard(){
+  const c=S.check; if(!c) return "";
+  if(c.status==="checking") return `<div class="checkcard"><div class="row" style="justify-content:space-between"><div class="thinking"><span class="dots"><i></i><i></i><i></i></span>Checking the spelling of “${esc(c.word)}”…</div><button class="btn quiet" data-ck="cancel">Cancel</button></div></div>`;
+  if(c.status==="form"){ const e=S.entries.get(c.entry); if(!e) return "";
+    return `<div class="checkcard"><p>“<span class="serif">${esc(c.word)}</span>” is already part of your entry for <strong class="serif">${esc(e.word)}</strong>.</p>
+      <div class="row"><button class="btn" data-ck="open" data-id="${esc(e.id)}">Open ${esc(e.word)}</button><button class="btn ghost" data-ck="asis">Save as its own word</button><button class="btn quiet" data-ck="cancel">Cancel</button></div></div>`; }
+  const sug=arr(c.suggestions), near=arr(c.near).map(id=>S.entries.get(id)).filter(Boolean);
+  return `<div class="checkcard"><p>“<span class="serif">${esc(c.word)}</span>” ${c.offline?"isn't in the offline word list.":"doesn't look like an English word."}${sug.length||near.length?" Did you mean:":" I couldn't find a likely match."}</p>
+    ${sug.length||near.length?`<div class="opts">${sug.map((s,i)=>{ const have=S.entries.has(slug(s.word)); return `<button class="opt" data-ck="pick" data-i="${i}"><span class="serif" style="font-weight:700;font-size:17px">${esc(s.word)}</span>${have?' <span class="chip ok">in your dictionary</span>':""}${s.hint?`<span class="why">${esc(s.hint)}</span>`:""}</button>`; }).join("")}
+      ${near.map(e=>`<button class="opt" data-ck="open" data-id="${esc(e.id)}"><span class="serif" style="font-weight:700;font-size:17px">${esc(e.word)}</span> <span class="chip ok">in your dictionary</span><span class="why">${esc(e.meaning||"")}</span></button>`).join("")}</div>`:""}
+    <div class="row"><button class="btn ghost" data-ck="asis">Save “${esc(c.word)}” as typed</button><button class="btn quiet" data-ck="cancel">Cancel</button></div></div>`;
+}
+function corePrompt(word, context){
+  return `Write the first part of a personal dictionary entry for an adult English learner in London (first language Chinese) who wants to understand English directly, without translating.
+Word or phrase: "${word}"${context?`\nWhere she met it: "${context}"`:""}
+- "meaning": 1-2 plain-English sentences, the way a thoughtful friend would explain it; accurate, not dictionary wording.
+- "simulation": a vivid, realistic 2-3 sentence everyday scene in second person that lets her feel the concept, without using the word.
+- "examples": two natural sentences using the word, in clearly different contexts.
+- "nonExamples": one nearby situation the word does NOT describe, with why.
+- "ipa": British IPA in slashes with ˈ before the stressed syllable; "ipaUS" only if American differs materially, else "".
+- "frequency": everyday | somewhat formal | uncommon. "chinese": a short simplified-Chinese gloss.
+- If the word looks misspelt, put the likely intended word in "word".
+British spelling. Reply with only JSON:
+{"word":"","pos":"","ipa":"","ipaUS":"","meaning":"","simulation":"","examples":["",""],"nonExamples":[{"text":"","why":""}],"frequency":"","chinese":""}`;
+}
+function restPrompt(e){
+  return `Complete a personal dictionary entry for an adult English learner (first language Chinese) who wants to understand English directly.
+Word: "${e.word}" (${e.pos||"part of speech not given"})
+Meaning already written: ${e.meaning}
+Scene already written: ${e.simulation||""}
+
+Rules:
+- "nuance": 2-4 near-neighbours or confusable ideas and how each differs from this meaning.
+- "register": register and emotional shade in one or two sentences.
+- "family": only genuinely attested noun / adjective / verb / adverb forms, each with British IPA (ˈ before the stressed syllable). status is common, uncommon or rare; for a missing part of speech add a row with form "—", status "none" and a note. Never invent forms.
+- "grammar.inflections": past tense and past participle ONLY if the headword is a verb (or name the auxiliary clearly, e.g. felt ambivalent). Plural or "uncountable" for nouns; comparatives for gradable adjectives.
+- "frequencyNote": a short caution that the frequency label is approximate.
+- "pronNote": a British–American difference or tricky sound, else "".
+- "recall.recognise": 4 options, exactly one correct, distractors drawn from the near-neighbours, shuffled, each with a short why.
+- "recall.contrast": three scenarios without the word, at least one that fits and one that doesn't.
+- "recall.produce": asks her to name or use the word for a described situation, without revealing it. "recall.explain": "Explain ${e.word} in your own English words."
+- "cautions": anything uncertain, or []. "tags": 1-3 short lowercase topic tags.
+British spelling. Reply with only JSON:
+{"nuance":[{"term":"","diff":""}],"register":"","family":[{"form":"","pos":"","ipa":"","status":"","note":""}],"grammar":{"patterns":[""],"collocations":[""],"inflections":[{"label":"","form":""}]},"frequencyNote":"","pronNote":"","recall":{"recognise":{"question":"Which situation shows ${e.word}?","options":[{"text":"","correct":true,"why":""}]},"contrast":[{"scenario":"","fits":true,"why":""}],"produce":"","explain":""},"cautions":[],"tags":[]}`;
+}
+function startCore(word, context){
+  const ctl=new AbortController();
+  const promise=S.sample.json(corePrompt(word, context),{modelTier:"quick", signal:ctl.signal, cache:false});
+  promise.catch(()=>{});
+  return {ctl, promise};
+}
+async function backgroundDraft(id, word, context, pre){
+  S.busy.draft=S.busy.draft||{}; S.busy.full=S.busy.full||{}; S.draftErr=S.draftErr||{};
+  if(S.busy.draft[id]) return;
+  S.busy.draft[id]=true; delete S.draftErr[id]; softRender(true);
+  let core=null, fid=null;
+  try{
+    try{ core=normaliseDraft(await (pre?pre.promise:startCore(word, context).promise), word); }
+    catch(err){ if(err && ["bad_key","bad_request","offline","rate_limited","cancelled"].includes(err.code)) throw err; core=null; }
+    if(core && core.meaning) fid=commitDraft(id, core, true);
+    else { const d=normaliseDraft(await S.sample.json(draftPrompt(word, context),{cache:false}), word); if(!d.meaning) throw {code:"invalid_json"}; fid=commitDraft(id, d, false); core=null; }
+  }catch(err){
+    const msg=sampleErr(err); S.draftErr[id]=msg||"Drafting stopped.";
+    if(err && err.code==="refused"){ const c=S.entries.get(id); if(c){ const n=clone(c); delete n.pendingLookup; put(n); } }
+  }
+  delete S.busy.draft[id]; softRender(true);
+  if(fid && core) fillRest(fid);
+}
+function retryLookups(fromOnline){
+  if(!S.sample || !navigator.onLine) return;
+  S.busy.draft=S.busy.draft||{}; S.busy.full=S.busy.full||{}; S.draftErr=S.draftErr||{};
+  for(const e of [...S.entries.values()]){
+    if(!fromOnline && S.draftErr[e.id]) continue;
+    if(e.captured && e.pendingLookup && !S.busy.draft[e.id]) backgroundDraft(e.id, e.word, e.context||"");
+    else if(e.pendingCore && !(S.busy.core&&S.busy.core[e.id])) fillCore(e.id);
+    else if(e.partial && !e.pendingCore && !e.captured && !S.busy.full[e.id] && !S.busy.draft[e.id]) fillRest(e.id);
+  }
+}
+function commitDraft(id, d, partial){
+  const cur=S.entries.get(id); if(!cur || !cur.captured) return null;
+  const entry=Object.assign(clone(cur), d, {aiDrafted:true}); delete entry.captured; delete entry.pendingLookup; delete entry.context;
+  if(partial) entry.partial=true;
+  const nid=slug(entry.word); let fid=id;
+  if(nid && nid!==id && !S.entries.has(nid)){ entry.id=nid; fid=nid; put(entry); removeEntry(id); const r=route(); if(r.v==="word"&&r.id===id) location.replace("#w-"+nid); }
+  else { entry.id=id; put(entry); }
+  toast(`Saved “${entry.word}”.${partial?" Adding the rest…":" Tap the pencil to change anything."}`);
+  return fid;
+}
+async function fillRest(id){
+  S.busy.full[id]=true; softRender(true);
+  try{
+    const e=S.entries.get(id); if(!e) return;
+    const r=normaliseDraft(await S.sample.json(restPrompt(e),{cache:false}), e.word);
+    const cur=clone(S.entries.get(id)); if(!cur || !cur.id) return;
+    const empty=(k,x)=> x==null || x==="" || (Array.isArray(x)&&!x.length) || (k==="grammar"&&!arr(x.patterns).length&&!arr(x.collocations).length&&!arr(x.inflections).length) || (k==="recall"&&!arr(x.recognise&&x.recognise.options).length&&!arr(x.contrast).length&&!x.produce);
+    ["nuance","register","family","grammar","frequencyNote","pronNote","recall","cautions","tags"].forEach(k=>{ if(!empty(k,r[k]) && empty(k,cur[k])) cur[k]=r[k]; });
+    delete cur.partial; put(cur);
+  }catch(err){
+    sampleErr(err);
+    if(err && (err.code==="refused"||err.code==="invalid_json"||err.code==="bad_key")){ toast("Couldn't add the extra sections. Open Edit and tap Redraft to try again."); const cur=S.entries.get(id); if(cur){ const c=clone(cur); delete c.partial; put(c); } }
+  }
+  finally{ delete S.busy.full[id]; softRender(true); }
+}
+
+/* --- Word view --- */
+function renderWord(v, id){
+  const e=S.entries.get(id);
+  if(!e){ setHead("Not found","words"); v.innerHTML=`<div class="stack">${notes()}<div class="list"><div class="empty">${S.mode==="db"&&!S.loaded?"Loading…":"This word isn't in your dictionary."}</div></div><a class="btn ghost" href="#words">Back to your words</a></div>`; return; }
+  setHead("Dictionary", "words", `<a class="iconbtn" href="#edit-${esc(e.id)}" aria-label="Edit entry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></a>`);
+  if(e.captured){
+    v.innerHTML=`<div class="stack">${notes()}<div class="entry-head"><h2 class="hw">${esc(e.word)}</h2></div>
+      ${S.busy.draft&&S.busy.draft[e.id]
+        ? `<div class="banner"><div class="thinking"><span class="dots"><i></i><i></i><i></i></span>The AI is writing the entry. It saves automatically, usually within a minute. You can keep using the app.</div></div>`
+        : `${!navigator.onLine?`<div class="banner">You're offline. This word is saved and will be looked up automatically when you're back online.</div>`:S.draftErr&&S.draftErr[e.id]?`<div class="banner warn">${esc(S.draftErr[e.id])}</div>`:`<div class="banner">The entry for this word isn't built yet.</div>`}
+           ${S.sample?`<button class="btn block" id="buildBtn">Look up and save with AI</button>`:`<a class="btn block" href="#backup">Add a free AI key</a>`}
+           <a class="btn ${S.sample?"ghost":""} block" href="#edit-${esc(e.id)}">Fill it in yourself</a>`}
+      ${delBlock(e)}</div>`; bindDel(e); const bb=$("#buildBtn"); if(bb) bb.onclick=()=>backgroundDraft(e.id, e.word, ""); return;
+  }
+  const r=e.review||{}; const g=e.grammar||{};
+  const showZh=!!S.showZh[e.id];
+  const ex=arr(e.examples), nx=arr(e.nonExamples), nu=arr(e.nuance), fam=arr(e.family);
+  v.innerHTML = `<div class="stack">
+    ${notes()}
+    <div class="entry-head">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <h2 class="hw">${esc(e.word)}</h2>
+      </div>
+      <div class="row">${e.pos?`<span class="pos">${esc(e.pos)}</span>`:""}${e.frequency?`<span class="chip plain" title="${esc(e.frequencyNote||"Approximate")}">${esc(e.frequency)}${e.frequencyNote?" ≈":""}</span>`:""}${statusChip(e)}</div>
+      ${e.ipa?`<div class="ipa-line"><span class="tag">BrE</span><span>${ipaHTML(e.ipa)}</span>${speakBtn(e.word)}</div>`:""}
+      ${e.ipaUS?`<div class="ipa-line" style="font-size:16px"><span class="tag">AmE</span><span>${ipaHTML(e.ipaUS)}</span></div>`:""}
+      ${e.pronNote?`<p class="note">${esc(e.pronNote)}</p>`:""}
+    </div>
+
+    <section class="index-card" aria-label="Meaning">
+      <p class="label">In plain English</p>
+      <p class="meaning">${esc(e.meaning||"No meaning yet. Tap edit to add one.")}</p>
+      ${e.simulation?`<div class="scene"><p class="label" style="margin-bottom:6px">Imagine</p><p class="txt">${esc(e.simulation)}</p></div>`:""}
+    </section>
+
+    ${(S.busy.full&&S.busy.full[e.id])||(S.busy.core&&S.busy.core[e.id])?`<div class="banner"><div class="thinking"><span class="dots"><i></i><i></i><i></i></span>Adding ${S.busy.core&&S.busy.core[e.id]?"a scene, examples, ":""}nuance, word family and practice questions…</div></div>`:(e.partial?`<div class="banner">${e.fromPack?"Meaning from the offline pack. ":""}${S.sample?"Examples, nuance, word family and practice questions will be added next time you're online.":"Add a free AI key in More to add examples, nuance and practice questions."}</div>`:"")}
+    ${showZh
+      ? `<div class="zh"><p class="label" style="margin-bottom:4px">中文 · fallback</p>${esc(e.chinese||"No Chinese note yet. Add one in Edit if you need it.")}<div style="margin-top:8px"><button class="btn quiet" data-act="hideZh">Hide Chinese</button></div></div>`
+      : `<button class="reveal" data-act="showZh"><span>Still unclear after the scene?</span> <b>Show Chinese</b></button>`}
+
+    ${(ex.length||nx.length)?`<div class="block"><h2 class="sec">What it describes, and what it doesn't</h2>
+      <ul class="ex">
+        ${ex.map(t=>`<li><span class="mk y" aria-label="Example">✓</span><div class="x"><div class="t">${esc(t)}</div></div>${speakBtn(t)}</li>`).join("")}
+        ${nx.map(n=>`<li><span class="mk n" aria-label="Non-example">✕</span><div class="x"><div class="t">${esc(n.text)}</div>${n.why?`<div class="why">${esc(n.why)}</div>`:""}</div></li>`).join("")}
+      </ul>
+      ${S.sample?`<div style="margin-top:10px">${S.busy.ctx===e.id?`<div class="thinking"><span class="dots"><i></i><i></i><i></i></span>Writing a new example…</div>`:`<button class="btn ghost" data-act="moreCtx">Another context</button>`}</div>`:""}
+    </div>`:""}
+
+    ${(nu.length||e.register)?`<div class="block"><h2 class="sec">Nuance</h2>
+      ${nu.length?`<dl class="nu">${nu.map(n=>`<dt>${esc(n.term)}</dt><dd>${esc(n.diff)}</dd>`).join("")}</dl>`:""}
+      ${e.register?`<p class="small" style="margin-top:10px"><span class="muted">Register · </span>${esc(e.register)}</p>`:""}
+    </div>`:""}
+
+    ${fam.length?`<div class="block"><h2 class="sec">Word family</h2>
+      <div class="tbl-wrap"><table class="fam"><thead><tr><th>Form</th><th>Part</th><th>BrE IPA</th></tr></thead><tbody>
+      ${fam.map(f=>{ const none=f.status==="none"||f.form==="—"; return `<tr class="${none?"absent":""}"><td><div class="fm">${esc(none?"—":f.form)}</div><div style="margin-top:4px">${statusLabel(f.status)}</div>${f.note?`<div class="small muted" style="margin-top:4px">${esc(f.note)}</div>`:""}</td><td>${esc(f.pos)}</td><td class="ip">${none?"":ipaHTML(f.ipa)}</td></tr>`; }).join("")}
+      </tbody></table></div>
+      <p class="note" style="margin-top:6px"><span class="st1">ˈ</span> marks the main stress: say the syllable after it louder and longer.</p>
+    </div>`:""}
+
+    ${(arr(g.patterns).length||arr(g.collocations).length||arr(g.inflections).length)?`<div class="block gram"><h2 class="sec" style="margin:0">Grammar</h2>
+      ${arr(g.patterns).length?`<div><p class="label">Patterns</p><ul>${g.patterns.map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`:""}
+      ${arr(g.collocations).length?`<div><p class="label">Goes with</p><ul>${g.collocations.map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`:""}
+      ${arr(g.inflections).length?`<div><p class="label">Forms</p><dl class="kv" style="margin-top:6px">${g.inflections.map(i=>`<dt>${esc(i.label)}</dt><dd>${esc(i.form)}</dd>`).join("")}</dl></div>`:""}
+    </div>`:""}
+
+    ${arr(e.cautions).length||e.frequencyNote?`<div class="cautions"><strong>Use with care</strong><ul>${arr(e.cautions).map(c=>`<li>${esc(c)}</li>`).join("")}${e.frequencyNote?`<li>${esc(e.frequencyNote)}</li>`:""}</ul></div>`:""}
+
+    <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Your sentences</h2>
+      ${arr(e.personal).map((p,i)=>`<div class="sent"><div class="t">${esc(p.text)}</div>${p.feedback?fbHTML(p.feedback):""}
+        <div class="row" style="justify-content:space-between"><span class="small muted">${p.at?new Date(p.at).toLocaleDateString("en-GB",{day:"numeric",month:"short"}):""}</span><button class="btn quiet small" data-act="delSent" data-i="${i}">Remove</button></div></div>`).join("")}
+      <textarea id="sentIn" placeholder="Write a sentence about your own life using “${esc(e.word)}”…" aria-label="Your sentence"></textarea>
+      <div class="row">
+        ${S.sample?`<button class="btn" data-act="sentFb" ${S.busy.sent?"disabled":""}>${S.busy.sent?'<span class="dots"><i></i><i></i><i></i></span> Checking':"Save and get feedback"}</button>`:""}
+        <button class="btn ${S.sample?"ghost":""}" data-act="sentSave">Save</button>
+      </div>
+    </div>
+
+    <div class="block"><h2 class="sec">Review</h2>
+      <dl class="kv">
+        <dt>Last practised</dt><dd>${r.last?esc(rel(r.last)):"Not yet"}</dd>
+        <dt>Confidence</dt><dd>${r.last?["Forgot","Hard","Good","Easy"][r.confidence??2]:"—"}</dd>
+        <dt>Next review</dt><dd>${r.next?esc(rel(r.next)):"Now"}</dd>
+        ${r.chineseReveals?`<dt>Chinese peeks</dt><dd>${r.chineseReveals}</dd>`:""}
+        ${arr(r.missed).length?`<dt>Missed</dt><dd>${arr(r.missed).map(m=>esc(m)).join("<br>")}</dd>`:""}
+      </dl>
+      <button class="btn block" style="margin-top:12px" data-act="practiseOne">Practise this word</button>
+    </div>
+    ${delBlock(e)}
+  </div>`;
+  bindDel(e);
+  v.querySelectorAll("[data-act]").forEach(b=>b.addEventListener("click", ev=>wordAct(ev, e)));
+}
+function statusLabel(s){ return ({common:'<span class="chip ok">common</span>',uncommon:'<span class="chip due">uncommon</span>',rare:'<span class="chip bad">rare</span>',none:'<span class="chip plain">no common form</span>'})[s]||esc(s||""); }
+function fbHTML(f){
+  const cls = f.verdict==="natural"||f.verdict==="got it" ? "y" : (f.verdict==="needs work"||f.verdict==="not yet" ? "n" : "m");
+  return `<div class="fb verdict ${cls}"><strong>${esc(cap(f.verdict||"feedback"))}</strong>
+    ${f.naturalness?`<span>${esc(f.naturalness)}</span>`:""}${f.grammar?`<span>${esc(f.grammar)}</span>`:""}${f.nuance?`<span>${esc(f.nuance)}</span>`:""}${f.feedback?`<span>${esc(f.feedback)}</span>`:""}${f.missed?`<span><em>Missed:</em> ${esc(f.missed)}</span>`:""}
+    ${f.better?`<span class="better">${esc(f.better)}</span>`:""}</div>`;
+}
+function cap(s){ s=String(s||""); return s.charAt(0).toUpperCase()+s.slice(1); }
+function delBlock(e){
+  return S.delConfirm===e.id
+    ? `<div class="confirm"><span style="flex:1;min-width:0">Delete “${esc(e.word)}” and its review history?</span><button class="btn danger" id="delYes">Delete</button><button class="btn quiet" id="delNo">Keep</button></div>`
+    : `<button class="btn quiet" id="delAsk" style="align-self:flex-start">Delete word</button>`;
+}
+function bindDel(e){
+  const a=$("#delAsk"), y=$("#delYes"), n=$("#delNo");
+  if(a) a.onclick=()=>{ S.delConfirm=e.id; render(); };
+  if(n) n.onclick=()=>{ S.delConfirm=""; render(); };
+  if(y) y.onclick=()=>{ S.delConfirm=""; removeEntry(e.id); toast(`Deleted “${e.word}”`); go("words"); };
+}
+async function wordAct(ev, e){
+  const b=ev.currentTarget, act=b.dataset.act;
+  if(act==="speak") return speak(b.dataset.text);
+  if(act==="showZh"){ S.showZh[e.id]=true; const n=clone(S.entries.get(e.id)); n.review=n.review||{}; n.review.chineseReveals=(n.review.chineseReveals||0)+1; put(n); return render(); }
+  if(act==="hideZh"){ S.showZh[e.id]=false; return render(); }
+  if(act==="practiseOne"){ startSession([e.id]); return go("practise"); }
+  if(act==="delSent"){ const n=clone(e); n.personal=arr(n.personal); n.personal.splice(+b.dataset.i,1); put(n); return render(); }
+  if(act==="sentSave"||act==="sentFb"){
+    const text=$("#sentIn").value.trim(); if(!text){ toast("Write a sentence first"); $("#sentIn").focus(); return; }
+    const n=clone(S.entries.get(e.id)); n.personal=arr(n.personal); const item={text, at:Date.now()}; n.personal.push(item); put(n);
+    if(act==="sentSave"){ toast("Saved"); return render(); }
+    S.busy.sent=true; render();
+    try{ const fb=await askFeedback(n, text); const m=clone(S.entries.get(e.id)); const it=arr(m.personal).find(p=>p.at===item.at&&p.text===text); if(it){ it.feedback={verdict:String(fb.verdict||""),naturalness:String(fb.naturalness||""),grammar:String(fb.grammar||""),nuance:String(fb.nuance||""),better:String(fb.better||"")}; put(m);} }
+    catch(err){ const msg=sampleErr(err); if(msg) toast(msg); }
+    S.busy.sent=false; return render();
+  }
+  if(act==="moreCtx"){
+    S.busy.ctx=e.id; render();
+    try{
+      const res=await S.sample.json(`Write ONE new natural example sentence using "${e.word}" (${e.pos||"word"}; meaning: ${e.meaning}) in a context clearly different from these:\n${arr(e.examples).map(x=>"- "+x).join("\n")}\nBritish English. Reply with only JSON: {"text":"the sentence"}`,{modelTier:"quick",cache:false});
+      const t=String(res&&res.text||"").trim();
+      if(t){ const n=clone(S.entries.get(e.id)); n.examples=arr(n.examples).concat([t]); put(n); }
+    }catch(err){ const msg=sampleErr(err); if(msg) toast(msg); }
+    S.busy.ctx=""; return render();
+  }
+}
+
+/* --- Add / Edit --- */
+function blankEntry(){ return {word:"",pos:"",ipa:"",ipaUS:"",pronNote:"",meaning:"",simulation:"",examples:[],nonExamples:[],nuance:[],register:"",family:[],grammar:{patterns:[],collocations:[],inflections:[]},frequency:"",frequencyNote:"",chinese:"",recall:{recognise:{question:"",options:[]},contrast:[],produce:"",explain:""},cautions:[],tags:[]}; }
+function toForm(e){
+  e=Object.assign(blankEntry(), clone(e)); const g=e.grammar||{}; const rc=e.recall||{}; const rg=rc.recognise||{};
+  return {
+    word:e.word, pos:e.pos, ipa:e.ipa, ipaUS:e.ipaUS, pronNote:e.pronNote, meaning:e.meaning, simulation:e.simulation,
+    examples:arr(e.examples).join("\n"),
+    nonExamples:arr(e.nonExamples).map(n=>n.text+(n.why?" | "+n.why:"")).join("\n"),
+    nuance:arr(e.nuance).map(n=>n.term+" | "+n.diff).join("\n"), register:e.register,
+    family:arr(e.family).map(f=>[f.form,f.pos,f.ipa,f.status].join(" | ")+(f.note?" | "+f.note:"")).join("\n"),
+    patterns:arr(g.patterns).join("\n"), collocations:arr(g.collocations).join("\n"),
+    inflections:arr(g.inflections).map(i=>i.label+" | "+i.form).join("\n"),
+    frequency:e.frequency, frequencyNote:e.frequencyNote, chinese:e.chinese,
+    rq:rg.question||"", ropts:arr(rg.options).map(o=>(o.correct?"* ":"")+o.text+(o.why?" | "+o.why:"")).join("\n"),
+    contrast:arr(rc.contrast).map(c=>c.scenario+" | "+(c.fits?"fits":"doesn't fit")+(c.why?" | "+c.why:"")).join("\n"),
+    produce:rc.produce||"", explain:rc.explain||"",
+    cautions:arr(e.cautions).join("\n"), tags:arr(e.tags).join(", ")
+  };
+}
+function fromForm(f){
+  return {
+    word:f.word.trim(), pos:f.pos.trim(), ipa:f.ipa.trim(), ipaUS:f.ipaUS.trim(), pronNote:f.pronNote.trim(), meaning:f.meaning.trim(), simulation:f.simulation.trim(),
+    examples:lines(f.examples),
+    nonExamples:lines(f.nonExamples).map(l=>{const p=parts(l);return {text:p[0],why:p.slice(1).join(" | ")};}),
+    nuance:lines(f.nuance).map(l=>{const p=parts(l);return {term:p[0],diff:p.slice(1).join(" | ")};}),
+    register:f.register.trim(),
+    family:lines(f.family).map(l=>{const p=parts(l);const st=(p[3]||"common").toLowerCase();return {form:p[0]||"—",pos:p[1]||"",ipa:p[2]||"",status:["common","uncommon","rare","none"].includes(st)?st:"common",note:p.slice(4).join(" | ")};}),
+    grammar:{patterns:lines(f.patterns), collocations:lines(f.collocations), inflections:lines(f.inflections).map(l=>{const p=parts(l);return {label:p[0],form:p.slice(1).join(" | ")};})},
+    frequency:f.frequency, frequencyNote:f.frequencyNote.trim(), chinese:f.chinese.trim(),
+    recall:{recognise:{question:f.rq.trim(), options:lines(f.ropts).map(l=>{const c=l.startsWith("*");const p=parts(c?l.slice(1).trim():l);return {text:p[0],correct:c,why:p.slice(1).join(" | ")};})},
+      contrast:lines(f.contrast).map(l=>{const p=parts(l);return {scenario:p[0],fits:/^(fits|yes|y|true)$/i.test(p[1]||""),why:p.slice(2).join(" | ")};}),
+      produce:f.produce.trim(), explain:f.explain.trim()},
+    cautions:lines(f.cautions), tags:f.tags.split(",").map(t=>t.trim().toLowerCase()).filter(Boolean)
+  };
+}
+const FIELDS=["word","pos","ipa","ipaUS","pronNote","meaning","simulation","examples","nonExamples","nuance","register","family","patterns","collocations","inflections","frequency","frequencyNote","chinese","rq","ropts","contrast","produce","explain","cautions","tags"];
+function readForm(){ const f={}; FIELDS.forEach(k=>{ const n=document.getElementById("f_"+k); f[k]=n?n.value:(S.edit?S.edit[k]:""); }); f.context=($("#f_context")||{}).value||""; return f; }
+function renderEdit(v, id){
+  const existing = id ? S.entries.get(id) : null;
+  if(id && !existing){ setHead("Not found","words"); v.innerHTML=`<div class="list"><div class="empty">${S.mode==="db"&&!S.loaded?"Loading…":"This word isn't in your dictionary."}</div></div>`; return; }
+  const key = id||"__new";
+  if(S.editFor!==key){ S.editFor=key; S.edit = existing ? toForm(existing) : toForm(blankEntry()); S.edit.context=""; S.draftMsg=""; }
+  const f=S.edit;
+  setHead(existing?(existing.captured?"Build entry":"Edit entry"):"New word", existing?"w-"+id:"words");
+  const T=(k,label,hint,rows)=>`<label class="f">${label}${hint?`<span class="hint">${hint}</span>`:""}<textarea id="f_${k}" rows="${rows||3}">${esc(f[k])}</textarea></label>`;
+  const I=(k,label,hint,ph)=>`<label class="f">${label}${hint?`<span class="hint">${hint}</span>`:""}<input type="text" id="f_${k}" value="${esc(f[k])}" placeholder="${esc(ph||"")}" autocapitalize="none"></label>`;
+  const drafting = !!S.drafting;
+  v.innerHTML = `<div class="stack">
+    ${notes()}
+    <div class="stack" style="gap:10px">
+      ${I("word","Word or phrase","","e.g. ambivalence")}
+      <label class="f">Where you met it <span class="hint">Optional. A sentence from what you were reading helps the AI pick the right sense.</span><input type="text" id="f_context" value="${esc(f.context||"")}" autocapitalize="sentences"></label>
+      ${S.sample?(drafting?`<div class="row"><div class="thinking" style="flex:1"><span class="dots"><i></i><i></i><i></i></span>The AI is drafting the entry. This can take up to a minute.</div><button class="btn ghost" id="stopDraft">Stop</button></div>`
+        :`<button class="btn block" id="draftBtn">${(existing&&!existing.captured)?"Redraft with AI":"Look up and save with AI"}</button>`)
+        :`<p class="note">Fill in the fields below, or add a free AI key in More to have entries written for you.</p>`}
+      ${S.draftMsg?`<div class="banner">${esc(S.draftMsg)}</div>`:""}
+      ${checkCard()}
+    </div>
+    <details class="grp" open><summary>Meaning and scene</summary><div class="in">
+      <div class="grid2">${I("pos","Part of speech","","noun")}${I("ipa","British IPA","Put ˈ before the stressed syllable","/æmˈbɪvələns/")}</div>
+      ${T("meaning","Natural meaning","One or two plain-English sentences",3)}
+      ${T("simulation","Mental scene","A concrete situation you can picture or feel",3)}
+    </div></details>
+    <details class="grp" open><summary>Examples and non-examples</summary><div class="in">
+      ${T("examples","Examples","One per line, in different contexts",4)}
+      ${T("nonExamples","Non-examples","One per line: near-miss | why it doesn't fit",3)}
+    </div></details>
+    <details class="grp"><summary>Nuance and register</summary><div class="in">
+      ${T("nuance","Near-neighbours","One per line: word | how it differs",4)}
+      ${I("register","Register and shade")}
+      <div class="grid2"><label class="f">Frequency<select id="f_frequency">${["","everyday","somewhat formal","uncommon"].map(o=>`<option value="${o}" ${f.frequency===o?"selected":""}>${o||"Not set"}</option>`).join("")}</select></label>${I("frequencyNote","Frequency caution")}</div>
+    </div></details>
+    <details class="grp"><summary>Word family, grammar and pronunciation</summary><div class="in">
+      ${T("family","Word family","One per line: form | part | IPA | common, uncommon, rare or none",4)}
+      ${T("patterns","Patterns","One per line",3)}
+      ${T("collocations","Collocations","One per line",3)}
+      ${T("inflections","Forms","One per line: label | form. Past tense only for verbs.",3)}
+      <div class="grid2">${I("ipaUS","American IPA","Only if it differs")}${I("pronNote","Pronunciation note")}</div>
+    </div></details>
+    <details class="grp"><summary>Chinese fallback</summary><div class="in">${T("chinese","Chinese gloss","Hidden by default when you study",2)}</div></details>
+    <details class="grp"><summary>Practice prompts</summary><div class="in">
+      ${I("rq","Recognition question")}
+      ${T("ropts","Options","One per line: option | why. Start the correct one with *",5)}
+      ${T("contrast","Contrast cases","One per line: situation | fits or doesn't fit | why",4)}
+      ${I("produce","Production prompt")}
+      ${I("explain","Explanation prompt")}
+    </div></details>
+    <details class="grp"><summary>Tags and cautions</summary><div class="in">
+      ${I("tags","Tags","Comma-separated","feelings, work")}
+      ${T("cautions","Cautions","Anything uncertain or approximate, one per line",2)}
+    </div></details>
+    <div class="sticky-save"><button class="btn" id="saveBtn">Save entry</button>${existing?`<a class="btn ghost" href="#w-${esc(id)}" id="cancelBtn">Cancel</a>`:""}</div>
+  </div>`;
+  v.querySelectorAll("input,textarea,select").forEach(n=>n.addEventListener("input",()=>{ const k=n.id.replace(/^f_/,""); S.edit[k]=n.value; }));
+  const cancel=$("#cancelBtn"); if(cancel) cancel.onclick=()=>{ S.editFor=null; };
+  $("#saveBtn").onclick=()=>saveEdit(existing);
+  const db=$("#draftBtn"); if(db) db.onclick=()=>{ if(existing) return draft(existing); const fm=readForm(); Object.assign(S.edit,fm); if(!fm.word.trim()){ toast("Type the word first"); $("#f_word").focus(); return; } capture(fm.word, fm.context.trim()); };
+  const sb=$("#stopDraft"); if(sb) sb.onclick=()=>{ if(S.drafting) S.drafting.abort(); };
+  if(existing && S.autoDraft===existing.id && S.sample && !drafting){ S.autoDraft=""; if(!S.edit.word) S.edit.word=existing.word; draft(existing); }
+}
+async function draft(existing){
+  const f=readForm(); Object.assign(S.edit,f);
+  const word=f.word.trim(); if(!word){ toast("Type the word first"); $("#f_word").focus(); return; }
+  const ctl=new AbortController(); S.drafting=ctl; S.draftMsg=""; render();
+  try{
+    const d = normaliseDraft(await S.sample.json(draftPrompt(word, f.context.trim()),{signal:ctl.signal, cache:false}), word);
+    const keep={context:S.edit.context}; S.edit=Object.assign(toForm(d), keep);
+    S.edit._ai=true;
+    if(!existing || existing.captured){ S.drafting=null; saveFromForm(existing, S.edit, true); return; }
+    S.draftMsg="Redrafted by AI. Read it over, then save to replace the current entry.";
+  }catch(err){ const msg=sampleErr(err); S.draftMsg=msg; }
+  S.drafting=null; if(route().v==="edit"||route().v==="add") render();
+}
+function saveEdit(existing){
+  const f=readForm(); Object.assign(S.edit,f);
+  saveFromForm(existing, f, false);
+}
+function saveFromForm(existing, f, auto){
+  const data=fromForm(f);
+  const onForm=()=>{ const v=route().v; return v==="edit"||v==="add"; };
+  if(!data.word){ toast("Type the word first"); return; }
+  if(!data.meaning && auto){ S.draftMsg="The AI's draft came back without a meaning. Add one, then save."; if(onForm()) render(); return; }
+  if(!data.meaning){ toast("Add a natural meaning before saving"); const m=$("#f_meaning"); if(m){ m.closest("details").open=true; m.focus(); } return; }
+  let id = existing ? existing.id : slug(data.word);
+  if(!id){ toast("Use English letters for the word"); return; }
+  if(!existing && S.entries.has(id)){ toast(`“${data.word}” is already in your dictionary`); go("w-"+id); return; }
+  const base = existing ? clone(S.entries.get(existing.id)||existing) : {id, created:Date.now(), personal:[], review:{}};
+  const entry = Object.assign(base, data, {id});
+  delete entry.captured;
+  if(f._ai || (S.edit&&S.edit._ai)) entry.aiDrafted=true;
+  put(entry); S.editFor=null; S.edit=null;
+  toast(auto?`Saved “${entry.word}”. Tap the pencil to change anything.`:"Saved");
+  if(!auto || onForm()) go("w-"+id); else softRender(true);
+}
+
+/* --- Practise --- */
+function buildCards(e){
+  const rc=e.recall||{}; const cards=[];
+  const w2c=[]; if(arr(rc.recognise&&rc.recognise.options).length>=2) w2c.push("recognise");
+  const contrastPool = arr(rc.contrast).length ? arr(rc.contrast) : arr(e.nonExamples).map(n=>({scenario:n.text,fits:false,why:n.why}));
+  if(contrastPool.length) w2c.push("contrast");
+  if(w2c.length){ const k=pick(w2c); cards.push(k==="contrast"?{k, item:pick(contrastPool)}:{k, opts:shuffle(rc.recognise.options)}); }
+  const re=formRegex(e); const clozable=arr(e.examples).filter(t=>re.test(t));
+  const c2w=["define"]; if(clozable.length) c2w.push("cloze");
+  const k2=pick(c2w); cards.push(k2==="cloze"?{k:"cloze", text:pick(clozable)}:{k:"define"});
+  cards.push({k: rc.produce && Math.random()<.6 ? "produce" : "explain"});
+  cards.push({k:"rate"});
+  return cards;
+}
+function startSession(ids){
+  const words=ids.filter(id=>S.entries.has(id) && !S.entries.get(id).captured);
+  if(!words.length){ S.sess=null; return; }
+  S.sess={ids:words, wi:0, ci:0, cards:buildCards(S.entries.get(words[0])), ans:null, miss:[], done:[], fb:null};
+}
+function renderPractise(v){
+  setHead("Practise", S.sess?"":null);
+  const ss=S.sess;
+  if(!ss){
+    const due=dueList(); const all=[...S.entries.values()].filter(e=>!e.captured);
+    const shaky=all.filter(e=>e.review&&e.review.last&&((e.review.confidence??2)<=1||arr(e.review.missed).length));
+    v.innerHTML=`<div class="stack">${notes()}
+      <div class="stat-row"><div class="stat"><b>${due.length}</b><span>due now</span></div><div class="stat"><b>${shaky.length}</b><span>shaky</span></div><div class="stat"><b>${all.length}</b><span>in dictionary</span></div></div>
+      <p class="muted">Each word gets a recognition check, a recall check in the other direction, then a chance to explain or use it, all in English. Words you miss come back first.</p>
+      <button class="btn block" id="startDue" ${due.length?"":"disabled"}>${due.length?`Start with ${Math.min(due.length,8)} due word${Math.min(due.length,8)===1?"":"s"}`:"Nothing due right now"}</button>
+      ${shaky.length?`<button class="btn ghost block" id="startShaky">Practise shaky words (${Math.min(shaky.length,8)})</button>`:""}
+      ${!due.length&&all.length?`<button class="btn ghost block" id="startAny">Practise anyway (${Math.min(all.length,8)} random)</button>`:""}
+    </div>`;
+    const sd=$("#startDue"); if(sd) sd.onclick=()=>{ startSession(due.slice(0,8).map(e=>e.id)); render(); };
+    const sk=$("#startShaky"); if(sk) sk.onclick=()=>{ startSession(shaky.sort((a,b)=>priority(b)-priority(a)).slice(0,8).map(e=>e.id)); render(); };
+    const sa=$("#startAny"); if(sa) sa.onclick=()=>{ startSession(shuffle(all).slice(0,8).map(e=>e.id)); render(); };
+    return;
+  }
+  if(ss.wi>=ss.ids.length){
+    v.innerHTML=`<div class="stack"><div class="pcard"><p class="label">Session complete</p><p class="q">${ss.done.length} word${ss.done.length===1?"":"s"} practised.</p>
+      <ul class="ex">${ss.done.map(d=>`<li><span class="mk ${d.r>=2?"y":"n"}">${d.r>=2?"✓":"↺"}</span><div class="x"><a class="t" href="#w-${esc(d.id)}">${esc(d.word)}</a><div class="why">${["Forgot, back today","Hard, back soon","Good","Easy"][d.r]}</div></div></li>`).join("")}</ul></div>
+      <button class="btn block" id="sessDone">Done</button></div>`;
+    $("#sessDone").onclick=()=>{ S.sess=null; render(); };
+    return;
+  }
+  const e=S.entries.get(ss.ids[ss.wi]); if(!e){ ss.wi++; ss.ci=0; if(ss.wi<ss.ids.length) ss.cards=buildCards(S.entries.get(ss.ids[ss.wi])); return renderPractise(v); }
+  const c=ss.cards[ss.ci]; const total=ss.ids.length;
+  const pct=Math.round(((ss.wi + ss.ci/ss.cards.length)/total)*100);
+  let body="", kind="";
+  if(c.k==="recognise"){
+    kind="Recognise";
+    body=`<p class="q">${esc(e.recall.recognise.question||`Which situation shows ${e.word}?`)}</p><div class="opts">${c.opts.map((o,i)=>{
+      let cls=""; if(ss.ans!==null){ if(o.correct) cls="right"; else if(ss.ans===i) cls="wrong"; }
+      return `<button class="opt ${cls}" data-i="${i}" ${ss.ans!==null?"disabled":""}>${esc(o.text)}${ss.ans!==null&&o.why?`<span class="why">${esc(o.why)}</span>`:""}</button>`; }).join("")}</div>`;
+  } else if(c.k==="contrast"){
+    kind="Does it fit?";
+    body=`<p class="q">${esc(c.item.scenario)}</p><p class="muted">Is this <strong class="serif">${esc(e.word)}</strong>?</p>
+      ${ss.ans===null?`<div class="grid2"><button class="btn ghost" data-yn="1">Yes, it fits</button><button class="btn ghost" data-yn="0">No, it doesn't</button></div>`
+      :`<div class="verdict ${ss.ans===c.item.fits?"y":"n"}"><strong>${ss.ans===c.item.fits?"Right.":"Not quite."}</strong> ${c.item.fits?"It fits.":"It doesn't fit."} ${esc(c.item.why||"")}</div>`}`;
+  } else if(c.k==="cloze"||c.k==="define"){
+    kind = c.k==="cloze"?"Fill the gap":"Name the word";
+    const prompt = c.k==="cloze" ? `<p class="q">${mask(c.text,e)}</p>` : `<p class="q">${mask(e.meaning,e)}</p>${e.simulation?`<p class="muted serif" style="font-style:italic">${mask(e.simulation,e)}</p>`:""}`;
+    let result="";
+    if(ss.ans!==null){
+      const ok=ss.ans.ok; const inSent = c.k==="cloze" ? (c.text.match(formRegex(e))||[])[0] : e.word;
+      result=`<div class="verdict ${ok?"y":"n"}"><strong>${ok?"Yes.":"The word is"}</strong> <span class="serif" style="font-size:18px">${esc(inSent)}</span> ${e.ipa?`<span class="serif">${ipaHTML(e.ipa)}</span>`:""} ${speakBtn(inSent)}
+        ${ok&&c.k==="cloze"&&norm(ss.ans.val)!==norm(inSent)?`<div class="small">Right word. In this sentence the form is “${esc(inSent)}”.</div>`:""}</div>`;
+    }
+    body=`${prompt}${ss.ans===null?`<form id="typeForm" class="capture" autocomplete="off"><input type="text" id="typeIn" placeholder="Type the word" autocapitalize="none" enterkeyhint="done"><button class="btn" type="submit">Check</button></form><button class="btn quiet" id="giveUp" style="align-self:flex-start">Show me</button>`:result}`;
+  } else if(c.k==="produce"||c.k==="explain"){
+    kind = c.k==="produce"?"Use it":"Explain it";
+    const task = c.k==="produce" ? e.recall.produce : (e.recall&&e.recall.explain) || `Explain “${e.word}” in your own English words.`;
+    body=`<p class="q">${esc(task)}</p>
+      ${ss.fb?fbHTML(ss.fb):""}
+      ${ss.ans===null?`<textarea id="prodIn" placeholder="Write in English. No need to translate first." aria-label="Your answer">${esc(ss.draft||"")}</textarea>
+        <div class="row">${S.sample?`<button class="btn" id="prodCheck" ${S.busy.prod?"disabled":""}>${S.busy.prod?'<span class="dots"><i></i><i></i><i></i></span> Checking':"Check with AI"}</button>`:""}
+        <button class="btn ${S.sample?"ghost":""}" id="prodSelf">${S.sample?"Compare myself":"Compare with the entry"}</button><button class="btn quiet" id="prodSkip">Skip</button></div>`
+      :`${!ss.fb?`<div class="verdict m"><strong>Compare:</strong> <span class="serif">${esc(e.meaning)}</span></div>`:""}`}`;
+  } else if(c.k==="rate"){
+    kind="How well did you know it?";
+    body=`<p class="q"><span class="serif" style="font-weight:700;font-size:24px">${esc(e.word)}</span> ${e.ipa?`<span class="muted serif">${ipaHTML(e.ipa)}</span>`:""}</p>
+      <p class="muted">${esc(e.meaning)}</p>
+      ${ss.miss.length?`<p class="small muted">Missed this round: ${ss.miss.map(esc).join("; ")}</p>`:""}
+      <div class="rate">${[["Forgot","today"],["Hard",ivPreview(e,1)],["Good",ivPreview(e,2)],["Easy",ivPreview(e,3)]].map((x,i)=>`<button data-r="${i}">${x[0]}<small>${x[1]}</small></button>`).join("")}</div>`;
+  }
+  const canNext = c.k!=="rate" && ss.ans!==null;
+  v.innerHTML=`<div class="stack">
+    <div class="row" style="justify-content:space-between"><span class="small muted">Word ${ss.wi+1} of ${total}</span><button class="btn quiet" id="endSess">End session</button></div>
+    <div class="progress" aria-hidden="true"><i style="width:${pct}%"></i></div>
+    <div class="pcard"><div class="kind"><p class="label">${esc(kind)}</p></div>${body}</div>
+    ${canNext?`<button class="btn block" id="nextCard">Next</button>`:""}
+  </div>`;
+  $("#endSess").onclick=()=>{ S.sess=null; render(); };
+  v.querySelectorAll("[data-act='speak']").forEach(b=>b.onclick=()=>speak(b.dataset.text));
+  v.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; ss.ans=i; const o=c.opts[i]; if(!o.correct) ss.miss.push(`chose “${o.text}”${o.why?" ("+o.why+")":""}`); render(); });
+  v.querySelectorAll("[data-yn]").forEach(b=>b.onclick=()=>{ ss.ans = b.dataset.yn==="1"; if(ss.ans!==c.item.fits) ss.miss.push(`${c.item.fits?"missed that it fits":"thought it fit"}: “${c.item.scenario}”`); render(); });
+  const tf=$("#typeForm"); if(tf){ const inp=$("#typeIn"); setTimeout(()=>{ try{inp.focus({preventScroll:true});}catch{} },50);
+    tf.onsubmit=ev=>{ ev.preventDefault(); const val=inp.value; if(!val.trim()) return; const ok = forms(e).some(f=>norm(f)===norm(val)); ss.ans={ok,val}; if(!ok) ss.miss.push(`couldn't recall the word${c.k==="cloze"?" in context":" from its meaning"}`); render(); }; }
+  const gu=$("#giveUp"); if(gu) gu.onclick=()=>{ ss.ans={ok:false,val:""}; ss.miss.push(`couldn't recall the word${c.k==="cloze"?" in context":" from its meaning"}`); render(); };
+  const pi=$("#prodIn"); if(pi) pi.oninput=()=>{ ss.draft=pi.value; };
+  const pc=$("#prodCheck"); if(pc) pc.onclick=async()=>{
+    const text=$("#prodIn").value.trim(); if(!text){ toast("Write something first"); return; }
+    ss.draft=text; S.busy.prod=true; render();
+    try{
+      if(c.k==="produce"){ const fb=await askFeedback(e,text,e.recall.produce); ss.fb={verdict:String(fb.verdict||""),naturalness:String(fb.naturalness||""),grammar:String(fb.grammar||""),nuance:String(fb.nuance||""),better:String(fb.better||"")};
+        const n=clone(S.entries.get(e.id)); n.personal=arr(n.personal).concat([{text,at:Date.now(),feedback:ss.fb}]); put(n);
+        if(fb.verdict==="needs work") ss.miss.push("sentence needed work"); }
+      else { const fb=await askExplain(e,text); ss.fb={verdict:String(fb.verdict||""),feedback:String(fb.feedback||""),missed:String(fb.missed||"")}; if(ss.fb.missed) ss.miss.push(ss.fb.missed); }
+      ss.ans=true;
+    }catch(err){ const msg=sampleErr(err); if(msg) toast(msg); }
+    S.busy.prod=false; render();
+  };
+  const ps=$("#prodSelf"); if(ps) ps.onclick=()=>{ const t=$("#prodIn").value.trim(); if(t && c.k==="produce"){ const n=clone(S.entries.get(e.id)); n.personal=arr(n.personal).concat([{text:t,at:Date.now()}]); put(n); } ss.ans=true; render(); };
+  const sk=$("#prodSkip"); if(sk) sk.onclick=()=>nextCard();
+  const nb=$("#nextCard"); if(nb) nb.onclick=()=>nextCard();
+  v.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{
+    const rating=+b.dataset.r; const n=schedule(clone(S.entries.get(e.id)), rating, ss.miss); put(n);
+    ss.done.push({id:e.id, word:e.word, r:rating});
+    if(rating===0 && !ss.requeued){ ss.requeued={}; }
+    if(rating===0 && ss.requeued && !ss.requeued[e.id]){ ss.requeued[e.id]=1; ss.ids.push(e.id); }
+    ss.wi++; ss.ci=0; ss.ans=null; ss.miss=[]; ss.fb=null; ss.draft="";
+    if(ss.wi<ss.ids.length){ const ne=S.entries.get(ss.ids[ss.wi]); if(ne) ss.cards=buildCards(ne); }
+    render(); window.scrollTo(0,0);
+  });
+}
+function ivPreview(e, r){ const t=schedule(clone(e), r, []); const d=t.review.interval; return d===1?"1 day":d+" days"; }
+function nextCard(){ const ss=S.sess; ss.ci++; ss.ans=null; ss.fb=null; ss.draft=""; render(); window.scrollTo(0,0); }
+
+/* --- Backup --- */
+function renderBackup(v){
+  setHead("Settings &amp; backup");
+  const all=[...S.entries.values()];
+  v.innerHTML=`<div class="stack">${notes()}
+    <div class="banner">Your words are saved on this phone. Export a backup now and then to keep them safe or move them to another device.</div>
+    <div class="stack" style="gap:10px"><h2 class="sec" style="margin:0">AI settings</h2>
+      <p class="small">New words are written by an AI service using your own key. The key stays on this phone.</p>
+      <label class="f">Service<select id="cfgProvider"><option value="gemini" ${S.cfg.provider==="gemini"?"selected":""}>Google Gemini (free tier)</option><option value="claude" ${S.cfg.provider==="claude"?"selected":""}>Claude (Anthropic API, paid)</option></select></label>
+      <label class="f">API key<span class="hint">${S.cfg.provider==="claude"?'Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>':'Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>'}</span>
+        <input type="password" id="cfgKey" value="${esc(S.cfg.keys[S.cfg.provider]||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Paste your key"></label>
+      <details class="grp"><summary>Models</summary><div class="in">
+        <label class="f">Fast model<span class="hint">Spelling check and first meaning</span><input type="text" id="cfgQuick" value="${esc(S.cfg.provider==="claude"?S.cfg.claudeQuick:S.cfg.geminiQuick)}" autocapitalize="none" spellcheck="false"></label>
+        <label class="f">Full-entry model<span class="hint">Nuance, word family, practice questions, feedback</span><input type="text" id="cfgFull" value="${esc(S.cfg.provider==="claude"?S.cfg.claudeFull:S.cfg.geminiFull)}" autocapitalize="none" spellcheck="false"></label>
+      </div></details>
+      <div class="row"><button class="btn" id="cfgSave">Save and test</button><span class="small" id="cfgMsg" role="status" style="flex:1;min-width:0"></span></div>
+      ${S.cfg.provider==="gemini"?'<p class="note">Free-tier limits and terms are set by Google and can change.</p>':'<p class="note">Claude API use is billed to your Anthropic account, separately from a Claude plan.</p>'}
+    </div>
+    <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Install on your iPhone</h2>
+      <p class="small">Open this page in Safari, tap Share, then Add to Home Screen. Open it from the new icon: it runs full-screen and works offline.</p>
+      <p class="small muted">Shortcuts and links open Safari rather than the Home Screen app, and the two keep separate words, so look words up from the app icon.</p>
+    </div>
+    <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Export</h2>
+      <p class="small muted">${all.length} word${all.length===1?"":"s"}, with examples, your sentences and review history, as one JSON file.</p>
+      <button class="btn block" id="expBtn" ${all.length?"":"disabled"}>Export backup</button>
+      <div id="expFallback" hidden class="stack" style="gap:8px"><textarea id="expText" rows="6" readonly></textarea><button class="btn ghost" id="expCopy">Copy</button></div>
+    </div>
+    <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Import</h2>
+      <p class="small muted">Words with the same headword are replaced by the imported version. To bring words over from the Claude version, export there and choose that file here.</p>
+      <label class="btn ghost block" for="impFile" style="cursor:pointer">Choose a backup file</label>
+      <input type="file" id="impFile" accept=".json,application/json" hidden>
+      <textarea id="impText" rows="4" placeholder="…or paste backup JSON here" aria-label="Paste backup JSON"></textarea>
+      <button class="btn ghost block" id="impBtn">Import pasted text</button>
+      <p class="small" id="impMsg" role="status"></p>
+    </div>
+  </div>`;
+  const payload=()=>JSON.stringify({app:"english-intuition", version:1, exported:new Date().toISOString(), entries:[...S.entries.values()]},null,2);
+  $("#expBtn").onclick=async()=>{
+    const data=payload(); const name=`english-intuition-${new Date().toISOString().slice(0,10)}.json`;
+    try{ const file=new File([data], name, {type:"application/json"});
+      if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:"English Intuition backup"}); return; } }
+    catch(err){ if(err && err.name==="AbortError") return; }
+    try{ const url=URL.createObjectURL(new Blob([data],{type:"application/json"})); const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000); toast("Backup saved"); return; }catch{}
+    $("#expFallback").hidden=false; $("#expText").value=data; toast("Copy the text below to keep a backup");
+  };
+  $("#expCopy").onclick=()=>copyText($("#expText").value, $("#expText"));
+  v.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>{ const n=document.getElementById(b.dataset.copy); copyText(n.value, n); });
+  const prov=$("#cfgProvider");
+  const keepFields=()=>{ const c=S.cfg; c.keys[c.provider]=$("#cfgKey").value.trim();
+    const q=$("#cfgQuick").value.trim(), fu=$("#cfgFull").value.trim();
+    if(c.provider==="claude"){ c.claudeQuick=q||DEFAULT_CFG.claudeQuick; c.claudeFull=fu||DEFAULT_CFG.claudeFull; }
+    else { c.geminiQuick=q||DEFAULT_CFG.geminiQuick; c.geminiFull=fu||DEFAULT_CFG.geminiFull; } };
+  prov.onchange=()=>{ keepFields(); S.cfg.provider=prov.value; renderBackup(v); };
+  $("#cfgSave").onclick=async()=>{
+    keepFields(); saveCfg(); S.sample=makeAI();
+    const msg=$("#cfgMsg");
+    if(!S.sample){ msg.textContent="Saved. Add a key to turn on AI look-ups."; return; }
+    msg.textContent="Testing…";
+    try{ const r=await S.sample.json('Reply with only this JSON: {"ok":true}',{modelTier:"quick"});
+      msg.textContent = r&&r.ok ? "Working. New words will be filled in automatically." : "Saved, but the reply looked odd. Try a word.";
+      retryLookups(true); }
+    catch(e){ msg.textContent = sampleErr(e)||"Test stopped."; }
+  };
+  const doImport=(text)=>{
+    let n=0; try{ const j=JSON.parse(text); const list=Array.isArray(j)?j:arr(j.entries);
+      list.forEach(e=>{ if(e && e.word){ e.id=e.id||slug(e.word); if(e.id){ put(e); n++; } } });
+      $("#impMsg").textContent = n?`Imported ${n} word${n===1?"":"s"}.`:"No words found in that file.";
+    }catch{ $("#impMsg").textContent="That isn't a valid backup. Export one from this app and try again."; }
+  };
+  $("#impFile").onchange=ev=>{ const file=ev.target.files[0]; if(!file) return; const rd=new FileReader(); rd.onload=()=>doImport(String(rd.result)); rd.readAsText(file); };
+  $("#impBtn").onclick=()=>{ const t=$("#impText").value.trim(); if(t) doImport(t); };
+}
+
+/* ---------- boot ---------- */
+$("#backBtn").onclick=()=>{ const to=$("#backBtn").dataset.to; if(route().v==="edit"||route().v==="add") S.editFor=null; if(to) go(to); else history.back(); };
+document.addEventListener("click", ev=>{
+  const b=ev.target.closest("[data-act='filter'],[data-act='tag'],[data-act='addq']"); if(!b) return;
+  if(b.dataset.act==="addq"){ S.q=""; capture(b.dataset.w); return; }
+  if(b.dataset.act==="filter"){ S.filter=b.dataset.k; } else { S.tag = S.tag===b.dataset.t ? "" : b.dataset.t; }
+  render();
+});
+document.addEventListener("click", ev=>{
+  const b=ev.target.closest("[data-ck]"); if(!b || !S.check) return;
+  const c=S.check, k=b.dataset.ck;
+  if(k==="cancel"){ S.check=null; render(); return; }
+  if(k==="open"){ S.check=null; go("w-"+b.dataset.id); return; }
+  if(k==="asis"){ S.check=null; capture(c.word, c.context, {skipForm:true, skipSpell:true}); return; }
+  if(k==="pick"){ const s=arr(c.suggestions)[+b.dataset.i]; S.check=null; if(s) capture(s.word, c.context, {skipSpell:true}); else render(); }
+});
+if(canSpeak){ try{ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>{}; }catch{} }
+init();
+})();
+</script>
+<script>
+if("serviceWorker" in navigator){ window.addEventListener("load", ()=>{ navigator.serviceWorker.register("./sw.js").catch(()=>{}); }); }
+</script>
+</body>
+</html>
