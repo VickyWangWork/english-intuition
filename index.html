@@ -1393,18 +1393,19 @@ function renderBackup(v){
   const all=[...S.entries.values()];
   v.innerHTML=`<div class="stack">${notes()}
     <div class="banner">Your words are saved on this phone. Export a backup now and then to keep them safe or move them to another device.</div>
-    <div class="stack" style="gap:10px"><h2 class="sec" style="margin:0">AI settings</h2>
-      <p class="small">New words are written by an AI service using your own key. The key stays on this phone.</p>
+    <form class="stack" id="cfgForm" style="gap:10px" autocomplete="on"><h2 class="sec" style="margin:0">AI settings</h2>
+      <p class="small">New words are written by an AI service using your own key. The key stays on this device and is never uploaded to GitHub. When you save, Safari can offer to keep it in iCloud Keychain, so your other Apple devices fill it in with one tap.</p>
+      <input type="text" name="username" autocomplete="username" value="${S.cfg.provider==="claude"?"Claude API key":"Gemini API key"}" hidden readonly>
       <label class="f">Service<select id="cfgProvider"><option value="gemini" ${S.cfg.provider==="gemini"?"selected":""}>Google Gemini (free tier)</option><option value="claude" ${S.cfg.provider==="claude"?"selected":""}>Claude (Anthropic API, paid)</option></select></label>
       <label class="f">API key<span class="hint">${S.cfg.provider==="claude"?'Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>':'Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>'}</span>
-        <input type="password" id="cfgKey" value="${esc(S.cfg.keys[S.cfg.provider]||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Paste your key"></label>
+        <input type="password" id="cfgKey" name="password" value="${esc(S.cfg.keys[S.cfg.provider]||"")}" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="Paste your key"></label>
       <details class="grp"><summary>Models</summary><div class="in">
         <label class="f">Fast model<span class="hint">Spelling check and first meaning</span><input type="text" id="cfgQuick" value="${esc(S.cfg.provider==="claude"?S.cfg.claudeQuick:S.cfg.geminiQuick)}" autocapitalize="none" spellcheck="false"></label>
         <label class="f">Full-entry model<span class="hint">Nuance, word family, practice questions, feedback</span><input type="text" id="cfgFull" value="${esc(S.cfg.provider==="claude"?S.cfg.claudeFull:S.cfg.geminiFull)}" autocapitalize="none" spellcheck="false"></label>
       </div></details>
-      <div class="row"><button class="btn" id="cfgSave">Save and test</button><span class="small" id="cfgMsg" role="status" style="flex:1;min-width:0"></span></div>
+      <div class="row"><button class="btn" type="submit" id="cfgSave">Save and test</button><span class="small" id="cfgMsg" role="status" style="flex:1;min-width:0"></span></div>
       ${S.cfg.provider==="gemini"?'<p class="note">Free-tier limits and terms are set by Google and can change.</p>':'<p class="note">Claude API use is billed to your Anthropic account, separately from a Claude plan.</p>'}
-    </div>
+    </form>
     <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Sync with GitHub</h2>
       <p class="small">Keeps a backup file in your private GitHub repository. Sync merges both ways: for each word, the most recently changed copy wins, and deletions carry over.</p>
       <label class="f">Repository<span class="hint">owner/name, ideally private</span><input type="text" id="syRepo" value="${esc(syncCfg().repo)}" autocapitalize="none" spellcheck="false"></label>
@@ -1459,7 +1460,7 @@ function renderBackup(v){
     try{ const r=await ghSync(false); msg.textContent=`Synced ${r.total} word${r.total===1?"":"s"}.${r.pulled?` ${r.pulled} updated from GitHub.`:""}${r.pushed?" Saved to GitHub.":""}`; }
     catch(e){ msg.textContent=(e&&e.message)||"Sync failed."; }
   };
-  $("#cfgSave").onclick=async()=>{
+  $("#cfgForm").onsubmit=async(ev)=>{ ev.preventDefault();
     keepFields(); saveCfg(); S.sample=makeAI();
     const msg=$("#cfgMsg");
     if(!S.sample){ msg.textContent="Saved. Add a key to turn on AI look-ups."; return; }
