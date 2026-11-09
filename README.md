@@ -30,3 +30,6 @@ Upload changed files to the repository. When you change anything, also change `V
 - Shortcuts and links open Safari, not the Home Screen app, and the two keep separate words. Look words up from the app icon.
 - If your iPhone runs very low on storage, iOS can clear a web app's data. Export a backup now and then.
 - Fonts: Charis SIL and Instrument Sans, SIL Open Font License (see `fonts/`).
+
+## Test the AI service
+Open `compare.html` (e.g. `https://vickywangwork.github.io/english-intuition/compare.html`) to run 10 test words through Gemini, and Claude if you add a key, using the app's own instructions. It checks British IPA against a reference, the plain-English meaning, examples and practice questions, and times each look-up.

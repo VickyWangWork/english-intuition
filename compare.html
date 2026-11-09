@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI Look-up Test</title>
+<style>
+@font-face{font-family:'Charis SIL';font-weight:400;src:url(fonts/charis-sil-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Charis SIL';font-weight:700;src:url(fonts/charis-sil-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Instrument Sans';font-weight:400;src:url(fonts/instrument-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Instrument Sans';font-weight:600;src:url(fonts/instrument-sans-latin-600-normal.woff2) format('woff2')}
+/* Layout: one column of test cards, a score strip on top. */
+:root{--bg:#EDF0EB;--surface:#FAFBF9;--ink:#17201C;--muted:#5A675F;--line:#D3DAD3;--accent:#1E5A48;--accent-ink:#fff;--good:#2C7547;--good-soft:#DCEEE1;--warn:#9A620F;--warn-soft:#F4E7CC;--bad:#AE3737;--bad-soft:#F5DDDA;
+  --f-head:"Charis SIL",Georgia,serif;--f-ui:"Instrument Sans",system-ui,-apple-system,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1412;--surface:#17201C;--ink:#E3EAE5;--muted:#93A29A;--line:#2A3530;--accent:#6BC2A3;--accent-ink:#0C1A14;--good:#71CB90;--good-soft:#1B3224;--warn:#E2B45E;--warn-soft:#382C16;--bad:#F08B81;--bad-soft:#3B201F;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-ui)}
+.wrap{max-width:900px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right)) 60px max(16px,env(safe-area-inset-left))}
+h1{font-family:var(--f-head);font-size:28px;margin:0 0 4px}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted);flex:1;min-width:220px}
+input,select{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px;width:100%}
+.btn{font:inherit;font-weight:600;min-height:44px;padding:0 18px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent);border-color:var(--line)}
+.btn:disabled{opacity:.5}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.score{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.score b{display:block;font-family:var(--f-head);font-size:26px;font-variant-numeric:tabular-nums}
+.score span{font-size:13px;color:var(--muted)}
+.word{font-family:var(--f-head);font-weight:700;font-size:21px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.cols{grid-template-columns:1fr}}
+.col{min-width:0;border-top:1px solid var(--line);padding-top:10px}
+.col h3{margin:0 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;font-size:12.5px;font-weight:600;margin:0 4px 4px 0}
+.ok{background:var(--good-soft);color:var(--good)}.meh{background:var(--warn-soft);color:var(--warn)}.no{background:var(--bad-soft);color:var(--bad)}
+.ipa{font-family:var(--f-head);font-size:17px}
+.mean{font-family:var(--f-head);font-size:16.5px;margin:6px 0}
+details{margin-top:6px}
+summary{cursor:pointer;color:var(--accent);font-size:14px;font-weight:600}
+pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;background:var(--bg);border-radius:8px;padding:8px;max-height:320px;overflow:auto}
+.progress{height:4px;background:var(--line);border-radius:999px;overflow:hidden}.progress i{display:block;height:100%;background:var(--accent);width:0}
+textarea{width:100%;font:12.5px/1.4 ui-monospace,monospace;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px}
+</style>
+</head>
+<body>
+<div class="wrap stack">
+  <div>
+    <h1>AI look-up test</h1>
+    <p class="muted">Runs real words through the same instructions the app uses, then checks the answers: British pronunciation against a reference, plain-English meaning, examples and practice questions. Keys stay in this browser.</p>
+  </div>
+  <div class="panel stack">
+    <div class="row">
+      <label>Gemini key<input id="kGemini" type="password" autocomplete="off" placeholder="From aistudio.google.com/apikey"></label>
+      <label>Gemini model<input id="mGemini" value="gemini-flash-latest" autocapitalize="none"></label>
+    </div>
+    <div class="row">
+      <label>Claude key (optional, for side-by-side)<input id="kClaude" type="password" autocomplete="off" placeholder="From console.anthropic.com"></label>
+      <label>Claude model<input id="mClaude" value="claude-haiku-5-5" autocapitalize="none"></label>
+    </div>
+    <div class="row"><button class="btn" id="run">Run test (10 words)</button><button class="btn ghost" id="copy" disabled>Copy results for Claude</button><span class="small muted" id="status" style="flex:1;min-width:200px"></span></div>
+    <div class="progress"><i id="bar"></i></div>
+  </div>
+  <div class="scores" id="scores"></div>
+  <div class="stack" id="out"></div>
+  <textarea id="dump" rows="6" hidden readonly></textarea>
+</div>
+<script>
+"use strict";
+function corePrompt(word, context){
+  return `Write the first part of a personal dictionary entry for an adult English learner in London (first language Chinese) who wants to understand English directly, without translating.
+Word or phrase: "${word}"${context?`\nWhere she met it: "${context}"`:""}
+- "meaning": 1-2 plain-English sentences, the way a thoughtful friend would explain it; accurate, not dictionary wording.
+- "simulation": a vivid, realistic 2-3 sentence everyday scene in second person that lets her feel the concept, without using the word.
+- "examples": two natural sentences using the word, in clearly different contexts.
+- "nonExamples": one nearby situation the word does NOT describe, with why.
+- "ipa": British IPA in slashes with ˈ before the stressed syllable; "ipaUS" only if American differs materially, else "".
+- "frequency": everyday | somewhat formal | uncommon. "chinese": a short simplified-Chinese gloss.
+- If the word looks misspelt, put the likely intended word in "word".
+British spelling. Reply with only JSON:
+{"word":"","pos":"","ipa":"","ipaUS":"","meaning":"","simulation":"","examples":["",""],"nonExamples":[{"text":"","why":""}],"frequency":"","chinese":""}`;
+}
+function restPrompt(e){
+  return `Complete a personal dictionary entry for an adult English learner (first language Chinese) who wants to understand English directly.
+Word: "${e.word}" (${e.pos||"part of speech not given"})
+Meaning already written: ${e.meaning}
+Scene already written: ${e.simulation||""}
+
+Rules:
+- "nuance": 2-4 near-neighbours or confusable ideas and how each differs from this meaning.
+- "register": register and emotional shade in one or two sentences.
+- "family": only genuinely attested noun / adjective / verb / adverb forms, each with British IPA (ˈ before the stressed syllable). status is common, uncommon or rare; for a missing part of speech add a row with form "—", status "none" and a note. Never invent forms.
+- "grammar.inflections": past tense and past participle ONLY if the headword is a verb (or name the auxiliary clearly, e.g. felt ambivalent). Plural or "uncountable" for nouns; comparatives for gradable adjectives.
+- "frequencyNote": a short caution that the frequency label is approximate.
+- "pronNote": a British–American difference or tricky sound, else "".
+- "recall.recognise": 4 options, exactly one correct, distractors drawn from the near-neighbours, shuffled, each with a short why.
+- "recall.contrast": three scenarios without the word, at least one that fits and one that doesn't.
+- "recall.produce": asks her to name or use the word for a described situation, without revealing it. "recall.explain": "Explain ${e.word} in your own English words."
+- "cautions": anything uncertain, or []. "tags": 1-3 short lowercase topic tags.
+British spelling. Reply with only JSON:
+{"nuance":[{"term":"","diff":""}],"register":"","family":[{"form":"","pos":"","ipa":"","status":"","note":""}],"grammar":{"patterns":[""],"collocations":[""],"inflections":[{"label":"","form":""}]},"frequencyNote":"","pronNote":"","recall":{"recognise":{"question":"Which situation shows ${e.word}?","options":[{"text":"","correct":true,"why":""}]},"contrast":[{"scenario":"","fits":true,"why":""}],"produce":"","explain":""},"cautions":[],"tags":[]}`;
+}
+function checkPrompt(word){
+  return `Is "${word}" a correctly spelt English word or established phrase (British or American spelling)? An English learner typed it on a phone, so expect typos and spellings based on sound.
+If it is correct (ignore capitalisation), reply {"valid":true,"suggestions":[]}.
+If it is not, reply {"valid":false,"suggestions":[{"word":"...","hint":"..."}]} with up to 5 real English words or phrases she most likely meant, most likely first. Each "hint" is a plain-English clue to the meaning in under 8 words, so she can recognise the word without translating. British spelling.
+Reply with only JSON.`;
+}
+function httpErr(status, msg){
+  const m=String(msg||"").slice(0,160);
+  if(status===401||status===403) return {code:"bad_key",message:m};
+  if(status===429) return {code:"rate_limited",message:m};
+  if(status===400||status===404) return {code:/api key/i.test(m)?"bad_key":"bad_request",message:m};
+  return {code:"upstream_error",message:m};
+}
+function parseJSONLoose(t){
+  t=String(t||"").trim(); if(!t) throw {code:"invalid_json"};
+  try{ return JSON.parse(t); }catch{}
+  const m=t.match(/```(?:json)?\s*([\s\S]*?)```/); if(m){ try{ return JSON.parse(m[1]); }catch{} }
+  const a=t.search(/[\[{]/), b=Math.max(t.lastIndexOf("}"), t.lastIndexOf("]"));
+  if(a>=0 && b>a){ try{ return JSON.parse(t.slice(a,b+1)); }catch{} }
+  throw {code:"invalid_json"};
+}
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const arr=a=>Array.isArray(a)?a:[];
+// Reference British IPA (accepted variants). Phrases and context words are checked for content only.
+const TESTS=[
+  {word:"serendipity", ipa:["/ˌserənˈdɪpəti/"]},
+  {word:"meticulous", ipa:["/məˈtɪkjələs/","/mɪˈtɪkjələs/","/məˈtɪkjʊləs/","/mɪˈtɪkjʊləs/"]},
+  {word:"colonel", ipa:["/ˈkɜːnl/","/ˈkɜːnəl/"]},
+  {word:"schedule", ipa:["/ˈʃedjuːl/","/ˈʃedʒuːl/"], note:"British usually starts with “sh”"},
+  {word:"controversy", ipa:["/ˈkɒntrəvɜːsi/","/kənˈtrɒvəsi/"]},
+  {word:"leisure", ipa:["/ˈleʒə/"]},
+  {word:"nonplussed", ipa:["/ˌnɒnˈplʌst/","/nɒnˈplʌst/"], note:"Often misused to mean “unbothered”; the real meaning is “confused”"},
+  {word:"hedge", context:"The fund bought options to hedge its exposure to copper prices.", ipa:["/hedʒ/"], note:"Should pick the finance sense from context"},
+  {word:"come to terms with", ipa:null},
+  {word:"ambivalance", spell:"ambivalence", note:"Misspelling: should be caught and corrected"}
+];
+const norm=s=>String(s||"").replace(/[\/\[\]\s.]/g,"").replace(/ˌ/g,"").replace(/ɹ/g,"r").replace(/ɡ/g,"g").replace(/ɛ/g,"e");
+const loose=s=>norm(s).replace(/ː/g,"").replace(/ʊ/g,"u").replace(/ɪ/g,"i").replace(/ə/g,"");
+function ipaScore(got, ref){
+  if(!ref) return null;
+  const amer=/(oʊ|ɚ|ɝ|ɾ|[ɑɔəɛeɪʊ]r(?![aeiouæɑɒɔəɛɪʊʌ])|ɑːr|ɔːr)/.test(got||"");
+  if(ref.some(r=>norm(r)===norm(got))) return {grade:"ok", label:"IPA matches", amer};
+  if(ref.some(r=>loose(r)===loose(got))) return {grade:"meh", label:"IPA close", amer};
+  return {grade:"no", label:"IPA differs", amer};
+}
+function lineOK(ok, good, bad){ return {ok, text: ok?good:bad}; }
+function checkCore(t, d){
+  const w=(d.word||t.word).toLowerCase(), stem=w.split(" ")[0].slice(0,Math.max(4,w.split(" ")[0].length-3));
+  const ex=arr(d.examples), nx=arr(d.nonExamples), m=String(d.meaning||""), sim=String(d.simulation||"");
+  const sentences=m.split(/[.!?](\s|$)/).filter(x=>x&&x.trim()).length;
+  return [
+    lineOK(!!m && sentences<=3 && m.split(/\s+/).length<=45, "Short plain meaning", "Meaning missing or too long"),
+    lineOK(!!sim && !sim.toLowerCase().includes(stem), "Scene without the word", sim?"Scene gives the word away":"No scene"),
+    lineOK(ex.length>=2 && ex.every(x=>String(x).toLowerCase().includes(stem)), "2+ examples using it", "Examples missing or don't use it"),
+    lineOK(nx.length>=1 && nx.every(n=>n.why), "Non-example with reason", "No non-example"),
+    lineOK(!!d.chinese, "Chinese fallback", "No Chinese"),
+    lineOK(/ˈ/.test(d.ipa||"") || (d.ipa||"").replace(/[^aeiouæɑɒɔəɜɛɪʊʌ]/g,"").length<=2, "Stress marked", "No stress mark")
+  ];
+}
+function checkRest(d){
+  const opts=arr(d.recall&&d.recall.recognise&&d.recall.recognise.options), con=arr(d.recall&&d.recall.contrast);
+  return [
+    lineOK(arr(d.nuance).length>=2, "2+ near-neighbours", "Too few near-neighbours"),
+    lineOK(arr(d.family).length>=1 && arr(d.family).every(f=>f.status==="none"||f.ipa), "Word family with IPA", "Word family missing IPA"),
+    lineOK(opts.length>=3 && opts.filter(o=>o.correct).length===1, "Quiz: one right answer", "Quiz options broken"),
+    lineOK(con.some(c=>c.fits) && con.some(c=>!c.fits), "Fits / doesn't-fit cases", "Contrast cases incomplete")
+  ];
+}
+async function call(provider, key, model, prompt){
+  const t0=performance.now(); let r, j, text="";
+  if(provider==="gemini"){
+    r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.replace(/^models\//,""))}:generateContent`,{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{responseMimeType:"application/json",temperature:0.4}})});
+    j=await r.json().catch(()=>({})); if(!r.ok) throw Object.assign(httpErr(r.status,j&&j.error&&j.error.message),{status:r.status});
+    text=arr(arr(j.candidates)[0]&&arr(j.candidates)[0].content&&j.candidates[0].content.parts).map(p=>p.text||"").join("");
+  } else {
+    r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:4000,messages:[{role:"user",content:prompt}]})});
+    j=await r.json().catch(()=>({})); if(!r.ok) throw Object.assign(httpErr(r.status,j&&j.error&&j.error.message),{status:r.status});
+    text=arr(j.content).map(p=>p.text||"").join("");
+  }
+  const ms=Math.round(performance.now()-t0);
+  return {ms, data:parseJSONLoose(text), raw:text};
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function callRetry(...a){
+  try{ return await call(...a); }
+  catch(e){ if(e&&e.code==="rate_limited"){ setStatus("Free-tier limit reached; waiting 30 seconds…"); await sleep(30000); return await call(...a); } throw e; }
+}
+function setStatus(t){ $("#status").textContent=t; }
+const RESULTS={};
+async function runOne(provider, key, model, t){
+  const res={provider, word:t.word};
+  try{
+    if(t.spell){
+      const c=await callRetry(provider,key,model,checkPrompt(t.word)); res.checkMs=c.ms;
+      const sug=arr(c.data.suggestions).map(s=>String(s.word||"").toLowerCase());
+      res.spell={valid:c.data.valid, top:sug[0]||"", ok:c.data.valid===false && sug.slice(0,2).includes(t.spell)}; res.raw={check:c.data};
+      return res;
+    }
+    const core=await callRetry(provider,key,model,corePrompt(t.word,t.context||"")); res.coreMs=core.ms; res.core=core.data;
+    res.ipa=core.data.ipa||""; res.ipaScore=ipaScore(res.ipa,t.ipa); res.coreChecks=checkCore(t,core.data);
+    const rest=await callRetry(provider,key,model,restPrompt({word:core.data.word||t.word,pos:core.data.pos,meaning:core.data.meaning,simulation:core.data.simulation}));
+    res.restMs=rest.ms; res.rest=rest.data; res.restChecks=checkRest(rest.data);
+  }catch(e){ res.error=(e&&e.code?e.code+": ":"")+((e&&e.message)||String(e)); }
+  return res;
+}
+function colHTML(r){
+  if(!r) return `<p class="small muted">Not run.</p>`;
+  if(r.error) return `<span class="chip no">Error</span><p class="small">${esc(r.error)}</p>`;
+  if(r.spell) return `<span class="chip ${r.spell.ok?"ok":"no"}">${r.spell.ok?"Caught the misspelling":"Missed it"}</span><p class="small">Top suggestion: <b>${esc(r.spell.top||"none")}</b> · ${r.checkMs} ms</p>`;
+  const all=[...r.coreChecks,...r.restChecks];
+  return `${r.ipaScore?`<span class="chip ${r.ipaScore.grade}">${r.ipaScore.label}</span>`:""}${r.ipaScore&&r.ipaScore.amer?`<span class="chip meh">Looks American</span>`:""}<span class="chip ${all.every(c=>c.ok)?"ok":all.filter(c=>c.ok).length>=all.length-2?"meh":"no"}">${all.filter(c=>c.ok).length}/${all.length} checks</span>
+    <div class="ipa">${esc(r.ipa)}</div>
+    <p class="mean">${esc(r.core.meaning||"")}</p>
+    <p class="small muted">Meaning in ${(r.coreMs/1000).toFixed(1)} s · full entry ${(((r.coreMs||0)+(r.restMs||0))/1000).toFixed(1)} s</p>
+    ${all.filter(c=>!c.ok).length?`<p class="small" style="color:var(--bad)">${all.filter(c=>!c.ok).map(c=>esc(c.text)).join(" · ")}</p>`:""}
+    <details><summary>Scene, examples and more</summary><pre>${esc(JSON.stringify({simulation:r.core.simulation,examples:r.core.examples,nonExamples:r.core.nonExamples,nuance:r.rest.nuance,family:r.rest.family,grammar:r.rest.grammar},null,2))}</pre></details>`;
+}
+function render(){
+  $("#out").innerHTML=TESTS.map(t=>`<div class="panel"><div class="word">${esc(t.word)}</div>${t.context?`<p class="small muted">Context: ${esc(t.context)}</p>`:""}${t.note?`<p class="small muted">${esc(t.note)}</p>`:""}${t.ipa?`<p class="small muted">Reference: <span class="ipa">${esc(t.ipa[0])}</span></p>`:""}
+    <div class="cols"><div class="col"><h3>Gemini</h3>${colHTML(RESULTS.gemini&&RESULTS.gemini[t.word])}</div><div class="col"><h3>Claude</h3>${colHTML(RESULTS.claude&&RESULTS.claude[t.word])}</div></div></div>`).join("");
+  const sc=[];
+  for(const p of ["gemini","claude"]){ const R=RESULTS[p]; if(!R) continue; const v=Object.values(R);
+    const ipa=v.filter(r=>r.ipaScore); const ipaOk=ipa.filter(r=>r.ipaScore.grade==="ok").length;
+    const checks=v.flatMap(r=>[...(r.coreChecks||[]),...(r.restChecks||[])]); const ms=v.filter(r=>r.coreMs).map(r=>r.coreMs).sort((a,b)=>a-b);
+    const name=p==="gemini"?"Gemini":"Claude";
+    sc.push(`<div class="score"><b>${ipaOk}/${ipa.length}</b><span>${name}: IPA exact</span></div><div class="score"><b>${checks.filter(c=>c.ok).length}/${checks.length}</b><span>${name}: content checks</span></div><div class="score"><b>${ms.length?(ms[Math.floor(ms.length/2)]/1000).toFixed(1)+" s":"–"}</b><span>${name}: typical time to meaning</span></div><div class="score"><b>${v.filter(r=>r.error).length}</b><span>${name}: errors</span></div>`); }
+  $("#scores").innerHTML=sc.join("");
+}
+function summary(){
+  const out={when:new Date().toISOString(), models:{gemini:$("#mGemini").value, claude:$("#kClaude").value?$("#mClaude").value:null}, results:{}};
+  for(const p in RESULTS){ out.results[p]=Object.values(RESULTS[p]).map(r=>({word:r.word,error:r.error,spell:r.spell,ipa:r.ipa,ipaGrade:r.ipaScore&&r.ipaScore.grade,amer:r.ipaScore&&r.ipaScore.amer,coreMs:r.coreMs,restMs:r.restMs,failed:[...(r.coreChecks||[]),...(r.restChecks||[])].filter(c=>!c.ok).map(c=>c.text),meaning:r.core&&r.core.meaning,simulation:r.core&&r.core.simulation,examples:r.core&&r.core.examples,nonExamples:r.core&&r.core.nonExamples,nuance:r.rest&&r.rest.nuance,family:r.rest&&r.rest.family,grammar:r.rest&&r.rest.grammar})); }
+  return JSON.stringify(out);
+}
+(function prefill(){ try{ const c=JSON.parse(localStorage.getItem("english-intuition.ai.v1")||"{}"); if(c.keys){ $("#kGemini").value=c.keys.gemini||""; $("#kClaude").value=c.keys.claude||""; } if(c.geminiQuick) $("#mGemini").value=c.geminiQuick; }catch{} })();
+render();
+$("#run").onclick=async()=>{
+  const gk=$("#kGemini").value.trim(), ck=$("#kClaude").value.trim();
+  if(!gk && !ck){ setStatus("Add a Gemini key (and optionally a Claude key) first."); return; }
+  $("#run").disabled=true; $("#copy").disabled=true; for(const k in RESULTS) delete RESULTS[k];
+  const jobs=[]; if(gk) jobs.push(["gemini",gk,$("#mGemini").value.trim()]); if(ck) jobs.push(["claude",ck,$("#mClaude").value.trim()]);
+  const total=jobs.length*TESTS.length; let done=0;
+  for(const [p,k,m] of jobs){ RESULTS[p]={};
+    for(const t of TESTS){ setStatus(`${p==="gemini"?"Gemini":"Claude"}: ${t.word}…`); RESULTS[p][t.word]=await runOne(p,k,m,t); done++; $("#bar").style.width=(done/total*100)+"%"; render();
+      if(p==="gemini") await sleep(1500); }
+  }
+  setStatus("Done. Tap “Copy results for Claude” and paste them into the chat for a detailed review."); $("#run").disabled=false; $("#copy").disabled=false;
+};
+$("#copy").onclick=async()=>{ const s=summary(); try{ await navigator.clipboard.writeText(s); setStatus("Copied. Paste it into the chat."); }catch{ const d=$("#dump"); d.hidden=false; d.value=s; d.select(); setStatus("Select the text below and copy it."); } };
+</script>
+</body>
+</html>
