@@ -62,6 +62,9 @@ header.top .wrap{display:flex;align-items:center;gap:10px;padding-block:12px;min
 .brand small{font-family:var(--f-ui);font-weight:500;font-size:12px;color:var(--muted);margin-left:6px;letter-spacing:.02em}
 .iconbtn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;flex:none}
 .iconbtn svg{width:20px;height:20px}
+.iconbtn.spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.iconbtn.spin svg{animation:none;opacity:.5}}
 main .wrap{padding-block:16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom,0px))}
 .stack{display:flex;flex-direction:column;gap:14px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -364,7 +367,10 @@ function put(entry){
   S.entries.set(entry.id, entry); idbPut(entry).catch(saveFail);
   refreshBadge();
 }
-function removeEntry(id){ S.entries.delete(id); idbDel(id).catch(saveFail); refreshBadge(); }
+const TOMB_KEY="english-intuition.deleted.v1";
+S.tomb=(()=>{ try{ return JSON.parse(localStorage.getItem(TOMB_KEY)||"{}")||{}; }catch{ return {}; } })();
+function saveTomb(){ try{ localStorage.setItem(TOMB_KEY, JSON.stringify(S.tomb)); }catch{} }
+function removeEntry(id){ S.entries.delete(id); S.tomb[id]=Date.now(); saveTomb(); idbDel(id).catch(saveFail); refreshBadge(); }
 window.addEventListener("online", ()=>{ retryLookups(true); softRender(true); });
 window.addEventListener("offline", ()=>softRender(true));
 async function startLocal(){
@@ -382,6 +388,7 @@ async function init(){
   try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch{}
   await startLocal();
   retryLookups(false);
+  if(syncReady() && syncCfg().auto) runSync(true);
 }
 
 /* ---------- review logic ---------- */
@@ -423,6 +430,87 @@ function forms(e){
 function formRegex(e){ return new RegExp("\\b("+forms(e).map(reEsc).join("|")+")\\b","i"); }
 function mask(text, e){ return esc(text).replace(new RegExp("\\b("+forms(e).map(f=>reEsc(esc(f))).join("|")+")\\b","gi"),'<span class="blank">____</span>'); }
 function norm(s){ return String(s||"").toLowerCase().replace(/[’']/g,"'").replace(/[^a-z' -]/g,"").replace(/\s+/g," ").trim(); }
+
+
+/* ---------- GitHub sync: one backup file in your private repository ---------- */
+const DEFAULT_SYNC={repo:"VickyWangWork/english-intuition-data", path:"backup.json", branch:"main", token:"", auto:true, lastSync:0};
+function syncCfg(){ S.cfg.sync=Object.assign(clone(DEFAULT_SYNC), S.cfg.sync||{}); return S.cfg.sync; }
+function syncReady(){ const c=syncCfg(); return !!(c.token && c.repo && c.path); }
+function b64e(str){ const b=new TextEncoder().encode(str); let bin=""; for(let i=0;i<b.length;i+=0x8000) bin+=String.fromCharCode.apply(null, b.subarray(i,i+0x8000)); return btoa(bin); }
+function b64d(str){ const bin=atob(String(str||"").replace(/\s/g,"")); const b=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) b[i]=bin.charCodeAt(i); return new TextDecoder().decode(b); }
+function ghErr(status, body){
+  let m=""; try{ m=JSON.parse(body).message||""; }catch{ m=String(body||"").slice(0,120); }
+  if(status===401) return {code:"gh_auth", message:"GitHub didn't accept the token. Check it in More → Sync, or make a new one."};
+  if(status===403) return {code:"gh_forbidden", message:"The token can't change this repository. Give it Contents: Read and write for "+syncCfg().repo+"."};
+  if(status===404) return {code:"gh_missing", message:"Couldn't find "+syncCfg().repo+". Check the repository name, and that the token can see it."};
+  return {code:"gh_error", message:"GitHub said: "+(m||("error "+status))};
+}
+function mergeData(localEntries, localTomb, remote){
+  const tomb=Object.assign({}, remote&&remote.deleted||{});
+  for(const id in localTomb) tomb[id]=Math.max(tomb[id]||0, localTomb[id]);
+  const byId=new Map();
+  for(const e of arr(remote&&remote.entries)) if(e&&e.id) byId.set(e.id, e);
+  for(const e of localEntries){ const r=byId.get(e.id); if(!r || (e.updated||0)>=(r.updated||0)) byId.set(e.id, e); }
+  for(const [id,e] of [...byId]) if(tomb[id] && tomb[id]>=(e.updated||0)) byId.delete(id);
+  const entries=[...byId.values()].sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+  return {app:"english-intuition", version:2, entries, deleted:tomb};
+}
+let syncing=null;
+async function ghSync(quiet){
+  if(syncing) return syncing;
+  syncing=(async()=>{
+    const c=syncCfg();
+    if(!syncReady()) throw {code:"no_sync", message:"Set up sync in More → Sync with GitHub first."};
+    if(!navigator.onLine) throw {code:"offline", message:"You're offline. Sync when you're back online."};
+    const url=`https://api.github.com/repos/${c.repo}/contents/${c.path.split("/").map(encodeURIComponent).join("/")}`;
+    const H={"Authorization":"Bearer "+c.token, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28"};
+    for(let attempt=0; attempt<3; attempt++){
+      let remote=null, sha=null, remoteText="";
+      const r=await fetch(`${url}?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`, {headers:H, cache:"no-store"});
+      if(r.status===200){
+        const j=await r.json(); sha=j.sha;
+        if(j.content) remoteText=b64d(j.content);
+        else if(j.size>0){ const raw=await fetch(`${url}?ref=${encodeURIComponent(c.branch)}&_=${Date.now()}`, {headers:Object.assign({},H,{Accept:"application/vnd.github.raw"}), cache:"no-store"}); remoteText=await raw.text(); }
+        try{ remote=remoteText?JSON.parse(remoteText):null; }catch{ throw {code:"gh_bad_file", message:"The backup file on GitHub isn't valid JSON. Fix or delete it, then sync again."}; }
+      } else if(r.status!==404){ throw ghErr(r.status, await r.text()); }   // 404: no backup file yet, it will be created
+      const merged=mergeData([...S.entries.values()], S.tomb, remote);
+      // bring this phone up to date
+      let pulled=0, removed=0;
+      const keep=new Set(merged.entries.map(e=>e.id));
+      for(const e of merged.entries){ const l=S.entries.get(e.id); if(!l || (l.updated||0)<(e.updated||0)){ S.entries.set(e.id, e); idbPut(e).catch(saveFail); pulled++; } }
+      for(const id of [...S.entries.keys()]) if(!keep.has(id)){ S.entries.delete(id); idbDel(id).catch(()=>{}); removed++; }
+      S.tomb=merged.deleted; saveTomb();
+      // push if GitHub's copy differs
+      const remoteNorm=remote?JSON.stringify(mergeData([], {}, remote)):"";
+      const mergedText=JSON.stringify(merged);
+      let pushed=false;
+      if(mergedText!==remoteNorm){
+        const body={message:`Sync from ${/iPhone|iPad/.test(navigator.userAgent)?"iPhone":"web app"} · ${merged.entries.length} words`, content:b64e(JSON.stringify(Object.assign({exported:new Date().toISOString()}, merged), null, 1)), branch:c.branch};
+        if(sha) body.sha=sha;
+        const w=await fetch(url, {method:"PUT", headers:Object.assign({},H,{"Content-Type":"application/json"}), body:JSON.stringify(body)});
+        if(w.status===409 || w.status===422){ continue; }   // changed on GitHub meanwhile: pull again and retry
+        if(!w.ok) throw ghErr(w.status, await w.text());
+        pushed=true;
+      }
+      c.lastSync=Date.now(); saveCfg(); refreshBadge();
+      return {pulled, removed, pushed, total:merged.entries.length};
+    }
+    throw {code:"gh_busy", message:"GitHub's copy kept changing. Try again in a moment."};
+  })();
+  try{ return await syncing; } finally{ syncing=null; }
+}
+async function runSync(quiet){
+  const b=document.querySelector("[data-act='sync']"); if(b) b.classList.add("spin");
+  try{
+    const r=await ghSync(quiet);
+    const bits=[]; if(r.pulled) bits.push(`${r.pulled} updated from GitHub`); if(r.removed) bits.push(`${r.removed} removed`); if(r.pushed) bits.push("saved to GitHub");
+    if(!quiet || r.pulled || r.removed) toast(bits.length?`Synced: ${bits.join(", ")}.`:"Already in sync.");
+    render();
+  }catch(e){ if(!quiet || (e&&e.code!=="offline"&&e.code!=="no_sync")) toast((e&&e.message)||"Sync failed. Try again."); }
+  finally{ const b2=document.querySelector("[data-act='sync']"); if(b2) b2.classList.remove("spin"); }
+}
+document.addEventListener("click", ev=>{ const b=ev.target.closest("[data-act='sync']"); if(b){ ev.preventDefault(); runSync(false); } });
+function syncBtn(){ return syncReady()?`<button class="iconbtn" data-act="sync" aria-label="Sync with GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/></svg></button>`:""; }
 
 /* ---------- AI service, called with your own key ---------- */
 const DEFAULT_CFG={provider:"gemini", keys:{gemini:"",claude:""}, geminiQuick:"gemini-flash-latest", geminiFull:"gemini-flash-latest", claudeQuick:"claude-haiku-5-5", claudeFull:"claude-haiku-5-5"};
@@ -637,7 +725,7 @@ function notes(){
 /* --- Words (library) --- */
 function renderWords(v){
   const all=[...S.entries.values()];
-  setHead(`English Intuition<small>${all.length} word${all.length===1?"":"s"}</small>`);
+  setHead(`English Intuition<small>${all.length} word${all.length===1?"":"s"}</small>`, null, syncBtn());
   const tags=[...new Set(all.flatMap(e=>arr(e.tags)))].sort();
   const q=S.q.trim().toLowerCase();
   let list=all.filter(e=>{
@@ -1292,6 +1380,17 @@ function renderBackup(v){
       <div class="row"><button class="btn" id="cfgSave">Save and test</button><span class="small" id="cfgMsg" role="status" style="flex:1;min-width:0"></span></div>
       ${S.cfg.provider==="gemini"?'<p class="note">Free-tier limits and terms are set by Google and can change.</p>':'<p class="note">Claude API use is billed to your Anthropic account, separately from a Claude plan.</p>'}
     </div>
+    <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Sync with GitHub</h2>
+      <p class="small">Keeps a backup file in your private GitHub repository. Sync merges both ways: for each word, the most recently changed copy wins, and deletions carry over.</p>
+      <label class="f">Repository<span class="hint">owner/name, ideally private</span><input type="text" id="syRepo" value="${esc(syncCfg().repo)}" autocapitalize="none" spellcheck="false"></label>
+      <label class="f">Token<span class="hint">Fine-grained token with Contents: Read and write on that repository only. It stays on this phone.</span><input type="password" id="syToken" value="${esc(syncCfg().token)}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="github_pat_…"></label>
+      <details class="grp"><summary>File and branch</summary><div class="in">
+        <label class="f">File<input type="text" id="syPath" value="${esc(syncCfg().path)}" autocapitalize="none" spellcheck="false"></label>
+        <label class="f">Branch<input type="text" id="syBranch" value="${esc(syncCfg().branch)}" autocapitalize="none" spellcheck="false"></label>
+      </div></details>
+      <label class="row small" style="gap:8px;font-weight:500"><input type="checkbox" id="syAuto" ${syncCfg().auto?"checked":""} style="width:20px;height:20px;min-height:0"> Sync when the app opens</label>
+      <div class="row"><button class="btn" id="sySave">Save and sync now</button><span class="small" id="syMsg" role="status" style="flex:1;min-width:0">${syncCfg().lastSync?"Last synced "+esc(rel(syncCfg().lastSync))+" at "+new Date(syncCfg().lastSync).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):""}</span></div>
+    </div>
     <div class="block stack" style="gap:10px"><h2 class="sec" style="margin:0">Install on your iPhone</h2>
       <p class="small">Open this page in Safari, tap Share, then Add to Home Screen. Open it from the new icon: it runs full-screen and works offline.</p>
       <p class="small muted">Shortcuts and links open Safari rather than the Home Screen app, and the two keep separate words, so look words up from the app icon.</p>
@@ -1327,6 +1426,14 @@ function renderBackup(v){
     if(c.provider==="claude"){ c.claudeQuick=q||DEFAULT_CFG.claudeQuick; c.claudeFull=fu||DEFAULT_CFG.claudeFull; }
     else { c.geminiQuick=q||DEFAULT_CFG.geminiQuick; c.geminiFull=fu||DEFAULT_CFG.geminiFull; } };
   prov.onchange=()=>{ keepFields(); S.cfg.provider=prov.value; renderBackup(v); };
+  $("#sySave").onclick=async()=>{
+    const c=syncCfg(); c.repo=$("#syRepo").value.trim().replace(/^https?:\/\/github\.com\//,"").replace(/\/$/,""); c.token=$("#syToken").value.trim();
+    c.path=$("#syPath").value.trim()||"backup.json"; c.branch=$("#syBranch").value.trim()||"main"; c.auto=$("#syAuto").checked; saveCfg();
+    const msg=$("#syMsg"); if(!syncReady()){ msg.textContent="Saved. Add a token to turn on sync."; return; }
+    msg.textContent="Syncing…";
+    try{ const r=await ghSync(false); msg.textContent=`Synced ${r.total} word${r.total===1?"":"s"}.${r.pulled?` ${r.pulled} updated from GitHub.`:""}${r.pushed?" Saved to GitHub.":""}`; }
+    catch(e){ msg.textContent=(e&&e.message)||"Sync failed."; }
+  };
   $("#cfgSave").onclick=async()=>{
     keepFields(); saveCfg(); S.sample=makeAI();
     const msg=$("#cfgMsg");

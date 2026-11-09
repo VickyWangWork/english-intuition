@@ -19,6 +19,13 @@ Your words and your AI key are never uploaded: they stay on your phone. The repo
 1. Get a free key at https://aistudio.google.com/apikey (Google Gemini), or use a Claude API key from https://console.anthropic.com.
 2. In the app, tap **More → AI settings**, paste the key and tap **Save and test**.
 
+## Sync with GitHub
+Your words can be kept in a backup file (`backup.json`) in a separate **private** repository, e.g. `english-intuition-data`.
+1. Create a fine-grained token at https://github.com/settings/personal-access-tokens/new with access to only that repository and **Contents: Read and write**.
+2. In the app: **More → Sync with GitHub**, paste the token, tap **Save and sync now**.
+3. Afterwards, tap the sync button at the top of the word list, or let it sync each time the app opens.
+For each word the most recently changed copy wins; deleted words stay deleted everywhere.
+
 ## Move words from the Claude version
 1. In the Claude version, open **More → Export backup** and save the file to Files.
 2. In this app, open **More → Import → Choose a backup file**.
