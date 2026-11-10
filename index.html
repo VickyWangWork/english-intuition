@@ -172,6 +172,7 @@ table.fam tr.absent td{color:var(--muted)}
 .cautions ul{margin:4px 0 0;padding-left:18px}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bad-soft);border-radius:10px;padding:10px 12px;font-size:14.5px}
 
+.fcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
 .checkcard{background:var(--surface);border:1px solid var(--accent);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px;font-size:15.5px}
 /* edit */
 details.grp{border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
@@ -918,7 +919,7 @@ function route(){
   if(h.startsWith("edit-")) return {v:"edit", id:h.slice(5)};
   if(h.startsWith("look-")) return {v:"look", word:h.slice(5).replace(/-+/g," ").trim()};
   if(h==="lookup") return {v:"lookup"};
-  if(["practise","add","backup","words"].includes(h)) return {v:h};
+  if(["practise","add","backup","words","find"].includes(h)) return {v:h};
   return {v:"words"};
 }
 function go(h){ if(location.hash==="#"+h) render(); else location.hash=h; }
@@ -942,7 +943,7 @@ function setHead(title, back, right){
 }
 function render(){
   const r=route(); const v=$("#view");
-  document.querySelectorAll("nav.tabs a").forEach(a=>{ const t=a.dataset.tab; const on = t===r.v || (t==="words" && (r.v==="word")) || (t==="add" && r.v==="edit"); if(on) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+  document.querySelectorAll("nav.tabs a").forEach(a=>{ const t=a.dataset.tab; const on = t===r.v || (t==="words" && (r.v==="word"||r.v==="find")) || (t==="add" && r.v==="edit"); if(on) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
   refreshBadge();
   if(S.mode==="loading"){ setHead("English Intuition"); v.innerHTML='<div class="empty">Opening your dictionary…</div>'; return; }
   S.waiting = S.mode==="db" && !S.loaded;
@@ -953,6 +954,7 @@ function render(){
   if(r.v==="add") return renderEdit(v, null);
   if(r.v==="practise") return renderPractise(v);
   if(r.v==="backup") return renderBackup(v);
+  if(r.v==="find") return renderFind(v);
   return renderWords(v);
 }
 function notes(){
@@ -990,6 +992,7 @@ function renderWords(v){
       <button class="btn ghost" type="button" id="pasteBtn">Paste</button>
       <button class="btn" type="submit">Add</button>
     </form>
+    <a class="small" href="#find" style="margin-top:-6px">Can't think of the word? Describe it</a>
     ${accountBanner()}
     ${checkCard()}
     <input type="search" id="searchIn" placeholder="Search your words" value="${esc(S.q)}" aria-label="Search your words">
@@ -1016,6 +1019,79 @@ function renderWords(v){
   $("#capForm").onsubmit = ev=>{ ev.preventDefault(); capture($("#capIn").value); };
   $("#searchIn").onkeydown = ev=>{ if(ev.key!=="Enter") return; ev.preventDefault(); const t=ev.target.value.trim(); if(!t) return; S.q=""; if(S.entries.has(slug(t))) go("w-"+slug(t)); else capture(t); };
   $("#searchIn").oninput = ev=>{ S.q=ev.target.value; const pos=ev.target.selectionStart; renderWords(v); const n=$("#searchIn"); n.focus(); try{n.setSelectionRange(pos,pos);}catch{} };
+}
+/* --- Find a word from a description (reverse dictionary) --- */
+S.find = S.find || {q:"", busy:false, res:null, err:"", n:0};
+function findPrompt(desc){
+  return `An adult English learner living in the UK (first language Chinese) wants the English word or expression for something she can describe but can't name.
+
+Her description: "${desc}"
+
+Suggest 4 to 6 candidates, best first. They can be single words, phrasal verbs or common idioms that British speakers actually use. If her description mixes several ideas (for example a feeling and an action), cover each idea. Include a near miss only if it teaches a useful difference.
+
+For each candidate:
+- "word": the word or expression as normally written
+- "pos": noun, verb, adjective, adverb, phrasal verb, idiom…
+- "ipa": British IPA in slashes with ˈ for primary stress (for a multi-word expression, the whole phrase)
+- "meaning": one plain-English sentence, the way a thoughtful friend would explain it
+- "fit": "best fit", "close" or "related"
+- "why": one sentence on how it matches her description, and what it leaves out or adds
+- "example": one natural sentence about the situation she described, using the word
+- "register": a few words, such as "everyday", "informal", "formal" or "literary"
+
+British spelling. Reply with only JSON: {"note":"one sentence if the description could mean different things, else empty string","candidates":[{"word":"","pos":"","ipa":"","meaning":"","fit":"best fit","why":"","example":"","register":""}]}`;
+}
+async function runFind(desc){
+  desc=String(desc||"").trim(); if(!desc) return;
+  const F=S.find; F.q=desc; F.err=""; F.res=null;
+  if(!S.sample){ F.err=(typeof makeAI==="function")?"Finding words needs AI. Sign in or add a free AI key in More.":"Claude isn't available here right now."; render(); return; }
+  if(!navigator.onLine){ F.err="You're offline. Finding a word needs an internet connection."; render(); return; }
+  const n=++F.n; F.busy=true; render();
+  try{
+    const d=await askJSON(findPrompt(desc),{modelTier:"quick", cache:false});
+    if(n!==F.n) return;
+    const c=arr(d&&d.candidates).map(x=>({word:String(x.word||"").trim(), pos:String(x.pos||""), ipa:slashIPA(x.ipa), meaning:String(x.meaning||""), fit:String(x.fit||"").toLowerCase(), why:String(x.why||""), example:String(x.example||""), register:String(x.register||"")})).filter(x=>x.word).slice(0,8);
+    if(!c.length) throw {code:"invalid_json"};
+    F.res={note:String(d.note||""), candidates:c};
+  }catch(e){ if(n!==F.n) return; F.err=sampleErr(e)||"Something went wrong. Try again."; }
+  finally{ if(n===F.n){ F.busy=false; if(route().v==="find") render(); } }
+}
+function renderFind(v){
+  setHead("Find a word", "words");
+  const F=S.find;
+  const fitChip=f=>f==="best fit"?'<span class="chip ok">Best fit</span>':f==="close"?'<span class="chip new">Close</span>':'<span class="chip plain">Related</span>';
+  v.innerHTML=`<div class="stack">
+    ${notes()}
+    <form class="stack" id="findForm" style="gap:10px" autocomplete="off">
+      <label class="f">Describe what you mean<span class="hint">In any words, English or a mix. Say who or what it's about and how it feels.</span>
+        <textarea id="findIn" rows="4" placeholder="For example: someone who keeps switching between new places, new people and new activities, so busy his head is turning">${esc(F.q)}</textarea></label>
+      <button class="btn" type="submit" ${F.busy?"disabled":""}>${F.busy?'<span class="dots"><i></i><i></i><i></i></span> Finding words':"Find words"}</button>
+    </form>
+    ${F.err?`<div class="banner warn">${esc(F.err)}</div>`:""}
+    ${F.res?`${F.res.note?`<p class="note">${esc(F.res.note)}</p>`:""}
+      <div class="stack" style="gap:10px">${F.res.candidates.map((c,i)=>{ const have=S.entries.has(slug(c.word)); return `<div class="fcard">
+        <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px">
+          <div style="min-width:0;flex:1"><span class="serif" style="font-size:21px;font-weight:700">${esc(c.word)}</span>${c.pos?`<span class="serif muted" style="font-style:italic;margin-left:6px">${esc(c.pos)}</span>`:""}
+            ${c.ipa?`<div class="serif muted">${ipaHTML(c.ipa)}</div>`:""}</div>
+          ${fitChip(c.fit)}
+        </div>
+        <p class="serif" style="font-size:17px;margin-top:8px">${esc(c.meaning)}</p>
+        ${c.why?`<p class="small muted" style="margin-top:6px">${esc(c.why)}</p>`:""}
+        ${c.example?`<p class="serif" style="font-style:italic;margin-top:8px">“${esc(c.example)}”</p>`:""}
+        <div class="row" style="margin-top:10px">
+          ${have?`<a class="btn ghost" href="#w-${esc(slug(c.word))}">Open in my words</a>`:`<button class="btn" type="button" data-fs="${i}">Save this word</button>`}
+          <span class="isp" style="padding:0">${speakBtn(c.word)}</span>
+          ${c.register?`<span class="small muted" style="flex:1;min-width:0;text-align:right">${esc(c.register)}</span>`:""}
+        </div></div>`; }).join("")}</div>
+      <p class="note">Saving looks the word up properly, using your description as the context.</p>`
+    :(!F.busy&&!F.err?`<p class="note">You'll get a few words or expressions, best first, with what each one means and an example about your situation. Save the one you want and it becomes a full entry.</p>`:"")}
+  </div>`;
+  const inp=$("#findIn");
+  $("#findForm").onsubmit=ev=>{ ev.preventDefault(); runFind(inp.value); };
+  inp.onkeydown=ev=>{ if(ev.key==="Enter" && (ev.metaKey||ev.ctrlKey)){ ev.preventDefault(); runFind(inp.value); } };
+  inp.oninput=()=>{ F.q=inp.value; };
+  v.querySelectorAll("[data-fs]").forEach(b=>b.onclick=()=>{ const c=F.res.candidates[+b.dataset.fs]; if(c){ go("words"); capture(c.word, F.q, {skipSpell:true}); } });
+  if(!F.q && !F.res) setTimeout(()=>{ try{ inp.focus(); }catch{} },120);
 }
 function lev(a,b){
   const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
