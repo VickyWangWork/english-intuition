@@ -1,5 +1,5 @@
 // English Intuition offline cache. Bump VERSION when any file changes.
-const VERSION = "ei-2026-11-10-03";
+const VERSION = "ei-2026-11-10-04";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./pack.json", "./config.js", "./vendor/supabase.js", "./icon-180.png", "./icon-192.png", "./icon-512.png",
   "./fonts/charis-sil-latin-400-italic.woff2",  "./fonts/charis-sil-latin-400-normal.woff2",  "./fonts/charis-sil-latin-700-normal.woff2",  "./fonts/charis-sil-latin-ext-400-italic.woff2",  "./fonts/charis-sil-latin-ext-400-normal.woff2",  "./fonts/charis-sil-latin-ext-700-normal.woff2",  "./fonts/instrument-sans-latin-400-normal.woff2",  "./fonts/instrument-sans-latin-500-normal.woff2",  "./fonts/instrument-sans-latin-600-normal.woff2",
